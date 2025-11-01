@@ -37,8 +37,25 @@ set(HEADERS
 # Create executable
 add_executable(esp32-driver-ide ${SOURCES} ${HEADERS})
 
+# Create demo executable
+add_executable(esp32-driver-ide-demo 
+    src/demo.cpp
+    src/editor/text_editor.cpp
+    src/editor/syntax_highlighter.cpp
+    src/file_manager/file_manager.cpp
+    src/ai_assistant/ai_assistant.cpp
+    src/compiler/esp32_compiler.cpp
+    src/serial/serial_monitor.cpp
+    src/gui/console_widget.cpp
+    src/utils/string_utils.cpp
+)
+
 # Include directories
 target_include_directories(esp32-driver-ide PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_include_directories(esp32-driver-ide-demo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
@@ -73,7 +90,7 @@ elseif(UNIX)
 endif()
 
 # Install rules
-install(TARGETS esp32-driver-ide DESTINATION bin)
+install(TARGETS esp32-driver-ide esp32-driver-ide-demo DESTINATION bin)
 
 # Testing
 if(BUILD_TESTS)
