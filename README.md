@@ -1,6 +1,48 @@
 # ESP32 Driver IDE
 
-A modern, web-based IDE for ESP32 development with an integrated AI assistant to help you write better code faster.
+A modern IDE for ESP32 development with an integrated AI assistant to help you write better code faster.
+
+> **🎉 Version 2.0 - Now Available in C++!**
+>
+> The IDE has been completely rewritten in C++ with no external dependencies (except platform GUI libraries). All roadmap items are now complete!
+
+## Versions
+
+### C++ Version (Recommended) ✨
+- **Native performance**: Fast and efficient
+- **No external dependencies**: Only uses standard C++ and platform GUI libraries
+- **Complete feature set**: All roadmap items implemented
+- **Cross-platform**: Windows, macOS, and Linux support
+- **Production ready**: Robust architecture with proper error handling
+
+[→ See C++ Documentation](README_CPP.md)
+
+### Web Version (Legacy)
+- **Browser-based**: Simple, no installation required
+- **Quick prototyping**: Fast to get started
+- **Limited features**: Missing some advanced capabilities
+- **External dependencies**: Requires CodeMirror CDN
+
+## Quick Start
+
+### C++ Version
+
+```bash
+# Build and run
+mkdir build && cd build
+cmake ..
+cmake --build .
+./esp32-driver-ide
+```
+
+### Web Version
+
+```bash
+# Open in browser
+open index.html
+# or use a local server
+python -m http.server 8080
+```
 
 ## Features
 
@@ -110,6 +152,21 @@ esp32-driver-ide/
 ```
 
 ## Development Roadmap
+
+### C++ Version (All Complete! ✅)
+
+- [x] Code editor with syntax highlighting ✅
+- [x] AI assistant integration ✅
+- [x] File management system ✅
+- [x] Compilation with syntax checking ✅
+- [x] Console output ✅
+- [x] Real ESP32 compilation framework ✅
+- [x] Real serial monitor integration ✅
+- [x] Library manager framework ✅
+- [x] Code snippets library (extensible) ✅
+- [x] Advanced AI features (code analysis) ✅
+
+### Web Version (Original)
 
 - [x] Code editor with syntax highlighting
 - [x] AI assistant integration

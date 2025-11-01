@@ -16,3 +16,20 @@ npm-debug.log*
 # Temporary files
 /tmp/
 *.tmp
+
+# Build artifacts
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+*.cmake
+Makefile
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+esp32-driver-ide
