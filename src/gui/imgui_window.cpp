@@ -1270,8 +1270,8 @@ void ImGuiWindow::InsertCodeIntoEditor(const std::string& code) {
     
     auto& tab = editor_tabs_[active_editor_tab_];
     
-    // Check if code will fit in buffer
-    if (code.length() >= EDITOR_BUFFER_SIZE) {
+    // Check if code will fit in buffer (reserve space for null terminator)
+    if (code.length() > EDITOR_BUFFER_SIZE - 1) {
         AddConsoleMessage("⚠ Code too large for buffer, truncating");
         tab.content = code.substr(0, EDITOR_BUFFER_SIZE - 1);
     } else {
