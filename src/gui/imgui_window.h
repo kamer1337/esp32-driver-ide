@@ -60,7 +60,12 @@ private:
     int current_center_tab_;  // 0=Editor, 1=Debugger, 2=Reverse-engineering
     std::string current_file_;
     std::string editor_content_;
-    char editor_buffer_[1024 * 1024];  // 1MB buffer for text editor
+    static constexpr size_t EDITOR_BUFFER_SIZE = 1024 * 1024; // 1MB buffer
+    char editor_buffer_[EDITOR_BUFFER_SIZE];
+    
+    // Cached UI values
+    int cached_line_count_;
+    bool line_count_dirty_;
     
     // USB/Serial state
     std::vector<std::string> available_ports_;

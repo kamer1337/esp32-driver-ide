@@ -16,6 +16,28 @@
 namespace esp32_ide {
 namespace gui {
 
+// Constants
+static constexpr size_t EDITOR_BUFFER_SIZE = 1024 * 1024; // 1MB buffer for text editor
+static const char* DEFAULT_SKETCH_TEMPLATE = 
+    "void setup() {\n"
+    "  // put your setup code here, to run once:\n"
+    "\n"
+    "}\n"
+    "\n"
+    "void loop() {\n"
+    "  // put your main code here, to run repeatedly:\n"
+    "\n"
+    "}\n";
+
+static const char* SIMPLE_SKETCH_TEMPLATE = 
+    "void setup() {\n"
+    "\n"
+    "}\n"
+    "\n"
+    "void loop() {\n"
+    "\n"
+    "}\n";
+
 static void glfw_error_callback(int error, const char* description) {
     std::cerr << "GLFW Error " << error << ": " << description << std::endl;
 }
@@ -32,7 +54,9 @@ ImGuiWindow::ImGuiWindow()
       selected_port_index_(0),
       selected_baud_rate_(115200),
       scroll_to_bottom_(false),
-      selected_file_index_(-1) {
+      selected_file_index_(-1),
+      cached_line_count_(0),
+      line_count_dirty_(true) {
     
     // Initialize editor buffer with empty content (lazy initialization is better than memset)
     editor_buffer_[0] = '\0';
@@ -205,8 +229,9 @@ void ImGuiWindow::RenderMainMenuBar() {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New", "Ctrl+N")) {
                 current_file_ = "new_sketch.ino";
-                editor_content_ = "void setup() {\n  // put your setup code here, to run once:\n\n}\n\nvoid loop() {\n  // put your main code here, to run repeatedly:\n\n}\n";
-                std::snprintf(editor_buffer_, sizeof(editor_buffer_), "%s", editor_content_.c_str());
+                editor_content_ = DEFAULT_SKETCH_TEMPLATE;
+                std::snprintf(editor_buffer_, EDITOR_BUFFER_SIZE, "%s", editor_content_.c_str());
+                line_count_dirty_ = true;
                 AddConsoleMessage("Created new file");
             }
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
@@ -331,8 +356,9 @@ void ImGuiWindow::RenderFileExplorer() {
     
     if (ImGui::Button("New File")) {
         current_file_ = "new_sketch.ino";
-        editor_content_ = "void setup() {\n\n}\n\nvoid loop() {\n\n}\n";
-        std::snprintf(editor_buffer_, sizeof(editor_buffer_), "%s", editor_content_.c_str());
+        editor_content_ = SIMPLE_SKETCH_TEMPLATE;
+        std::snprintf(editor_buffer_, EDITOR_BUFFER_SIZE, "%s", editor_content_.c_str());
+        line_count_dirty_ = true;
         RefreshFileList();
     }
     
@@ -384,9 +410,10 @@ void ImGuiWindow::RenderEditorTab() {
     
     // Text editor
     ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
-    if (ImGui::InputTextMultiline("##editor", editor_buffer_, sizeof(editor_buffer_),
+    if (ImGui::InputTextMultiline("##editor", editor_buffer_, EDITOR_BUFFER_SIZE,
                                   ImVec2(-1, -1), flags)) {
         editor_content_ = std::string(editor_buffer_);
+        line_count_dirty_ = true; // Mark line count as needing recalculation
         if (text_editor_) {
             text_editor_->SetText(editor_content_);
         }
@@ -456,7 +483,13 @@ void ImGuiWindow::RenderPropertiesPanel() {
     if (!current_file_.empty()) {
         ImGui::BulletText("Name: %s", current_file_.c_str());
         ImGui::BulletText("Size: %zu bytes", editor_content_.size());
-        ImGui::BulletText("Lines: %ld", static_cast<long>(std::count(editor_content_.begin(), editor_content_.end(), '\n') + 1));
+        
+        // Calculate line count only when content changes
+        if (line_count_dirty_) {
+            cached_line_count_ = static_cast<int>(std::count(editor_content_.begin(), editor_content_.end(), '\n') + 1);
+            line_count_dirty_ = false;
+        }
+        ImGui::BulletText("Lines: %d", cached_line_count_);
     } else {
         ImGui::TextDisabled("No file loaded");
     }
@@ -551,10 +584,11 @@ void ImGuiWindow::LoadFile(const std::string& filename) {
     if (file_manager_ && file_manager_->FileExists(filename)) {
         editor_content_ = file_manager_->GetFileContent(filename);
     } else {
-        editor_content_ = "// File: " + filename + "\n\nvoid setup() {\n\n}\n\nvoid loop() {\n\n}\n";
+        editor_content_ = "// File: " + filename + "\n\n" + std::string(SIMPLE_SKETCH_TEMPLATE);
     }
     
-    std::snprintf(editor_buffer_, sizeof(editor_buffer_), "%s", editor_content_.c_str());
+    std::snprintf(editor_buffer_, EDITOR_BUFFER_SIZE, "%s", editor_content_.c_str());
+    line_count_dirty_ = true;
     
     if (text_editor_) {
         text_editor_->SetText(editor_content_);
