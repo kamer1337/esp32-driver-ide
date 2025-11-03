@@ -1065,23 +1065,21 @@ void ImGuiWindow::SendAIMessage(const std::string& message) {
         current_code = editor_tabs_[active_editor_tab_].content;
     }
     
+    // Create AI assistant instance
+    auto ai_assistant = std::make_unique<esp32_ide::AIAssistant>();
+    
     // Query AI assistant with code context
     std::string response;
-    if (text_editor_ && text_editor_->GetTextEditor()) {
-        // Use AI assistant's query method
-        auto ai_assistant = std::make_unique<esp32_ide::AIAssistant>();
-        
-        // If message asks about code, provide context
-        if (message.find("code") != std::string::npos || 
-            message.find("error") != std::string::npos ||
-            message.find("fix") != std::string::npos) {
-            response = ai_assistant->AnalyzeCode(current_code) + "\n\n" + ai_assistant->Query(message);
-        } else {
-            response = ai_assistant->Query(message);
-        }
+    
+    // If message asks about code, provide context
+    if (!current_code.empty() && 
+        (message.find("code") != std::string::npos || 
+         message.find("error") != std::string::npos ||
+         message.find("fix") != std::string::npos ||
+         message.find("analyze") != std::string::npos)) {
+        response = ai_assistant->AnalyzeCode(current_code) + "\n\n" + ai_assistant->Query(message);
     } else {
-        // Fallback response
-        response = "AI Assistant is processing your request. This feature provides context-aware help for ESP32 and Arduino development.";
+        response = ai_assistant->Query(message);
     }
     
     // Add to chat history
