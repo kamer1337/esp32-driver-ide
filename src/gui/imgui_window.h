@@ -139,6 +139,7 @@ private:
     void AddConsoleMessage(const std::string& message);
     void SendAIMessage(const std::string& message);
     void RenderFileNode(FileNode& node, const std::string& parent_path);
+    void InsertCodeIntoEditor(const std::string& code);
     
     // ImGui setup
     void SetupImGuiStyle();

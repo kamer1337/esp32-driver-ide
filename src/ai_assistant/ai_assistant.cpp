@@ -81,6 +81,209 @@ std::string AIAssistant::SuggestFix(const std::string& error_message) {
     return "Review the error message carefully and check your syntax near the indicated line.";
 }
 
+std::string AIAssistant::GenerateCode(const std::string& request) {
+    std::string lower_request = request;
+    std::transform(lower_request.begin(), lower_request.end(), lower_request.begin(), ::tolower);
+    
+    // Check for code generation requests
+    if (ContainsKeywords(lower_request, {"generate", "create", "write", "make", "code for"})) {
+        if (ContainsKeywords(lower_request, {"gpio", "pin", "led", "button", "blink"})) {
+            return GenerateGPIOCode(lower_request);
+        }
+        if (ContainsKeywords(lower_request, {"wifi", "network", "connect"})) {
+            return GenerateWiFiCode();
+        }
+        if (ContainsKeywords(lower_request, {"bluetooth", "ble", "bt"})) {
+            return GenerateBluetoothCode();
+        }
+        if (ContainsKeywords(lower_request, {"serial", "print", "debug"})) {
+            return GenerateSerialCode();
+        }
+        if (ContainsKeywords(lower_request, {"sensor", "dht", "temperature", "humidity"})) {
+            return GenerateSensorCode("DHT");
+        }
+    }
+    
+    return "";  // No code generated
+}
+
+std::string AIAssistant::GenerateGPIOCode(const std::string& request) const {
+    // Check if it's about LED/blinking
+    if (request.find("led") != std::string::npos || request.find("blink") != std::string::npos) {
+        return "// LED Blink Example\n"
+               "#define LED_PIN 2  // Built-in LED on most ESP32 boards\n\n"
+               "void setup() {\n"
+               "  pinMode(LED_PIN, OUTPUT);\n"
+               "}\n\n"
+               "void loop() {\n"
+               "  digitalWrite(LED_PIN, HIGH);  // Turn LED on\n"
+               "  delay(1000);                  // Wait 1 second\n"
+               "  digitalWrite(LED_PIN, LOW);   // Turn LED off\n"
+               "  delay(1000);                  // Wait 1 second\n"
+               "}\n";
+    }
+    
+    // Check if it's about button
+    if (request.find("button") != std::string::npos) {
+        return "// Button Input Example\n"
+               "#define BUTTON_PIN 4\n"
+               "#define LED_PIN 2\n\n"
+               "void setup() {\n"
+               "  pinMode(BUTTON_PIN, INPUT_PULLUP);  // Use internal pull-up\n"
+               "  pinMode(LED_PIN, OUTPUT);\n"
+               "  Serial.begin(115200);\n"
+               "}\n\n"
+               "void loop() {\n"
+               "  int buttonState = digitalRead(BUTTON_PIN);\n"
+               "  \n"
+               "  if (buttonState == LOW) {  // Button pressed (active LOW)\n"
+               "    digitalWrite(LED_PIN, HIGH);\n"
+               "    Serial.println(\"Button pressed!\");\n"
+               "  } else {\n"
+               "    digitalWrite(LED_PIN, LOW);\n"
+               "  }\n"
+               "  \n"
+               "  delay(50);  // Debounce delay\n"
+               "}\n";
+    }
+    
+    // Generic GPIO example
+    return "// GPIO Output Example\n"
+           "#define OUTPUT_PIN 2\n\n"
+           "void setup() {\n"
+           "  pinMode(OUTPUT_PIN, OUTPUT);\n"
+           "}\n\n"
+           "void loop() {\n"
+           "  digitalWrite(OUTPUT_PIN, HIGH);\n"
+           "  delay(1000);\n"
+           "  digitalWrite(OUTPUT_PIN, LOW);\n"
+           "  delay(1000);\n"
+           "}\n";
+}
+
+std::string AIAssistant::GenerateWiFiCode() const {
+    return "// WiFi Connection Example\n"
+           "#include <WiFi.h>\n\n"
+           "const char* ssid = \"YOUR_SSID\";\n"
+           "const char* password = \"YOUR_PASSWORD\";\n\n"
+           "void setup() {\n"
+           "  Serial.begin(115200);\n"
+           "  \n"
+           "  // Connect to WiFi\n"
+           "  Serial.print(\"Connecting to \");\n"
+           "  Serial.println(ssid);\n"
+           "  \n"
+           "  WiFi.begin(ssid, password);\n"
+           "  \n"
+           "  while (WiFi.status() != WL_CONNECTED) {\n"
+           "    delay(500);\n"
+           "    Serial.print(\".\");\n"
+           "  }\n"
+           "  \n"
+           "  Serial.println(\"\");\n"
+           "  Serial.println(\"WiFi connected!\");\n"
+           "  Serial.print(\"IP address: \");\n"
+           "  Serial.println(WiFi.localIP());\n"
+           "}\n\n"
+           "void loop() {\n"
+           "  // Your code here\n"
+           "}\n";
+}
+
+std::string AIAssistant::GenerateBluetoothCode() const {
+    return "// Bluetooth Serial Example\n"
+           "#include <BluetoothSerial.h>\n\n"
+           "BluetoothSerial SerialBT;\n\n"
+           "void setup() {\n"
+           "  Serial.begin(115200);\n"
+           "  SerialBT.begin(\"ESP32_BT\");  // Bluetooth device name\n"
+           "  Serial.println(\"Bluetooth Started! Ready to pair...\");\n"
+           "}\n\n"
+           "void loop() {\n"
+           "  // Read from Bluetooth\n"
+           "  if (SerialBT.available()) {\n"
+           "    char c = SerialBT.read();\n"
+           "    Serial.write(c);\n"
+           "  }\n"
+           "  \n"
+           "  // Read from Serial and send to Bluetooth\n"
+           "  if (Serial.available()) {\n"
+           "    char c = Serial.read();\n"
+           "    SerialBT.write(c);\n"
+           "  }\n"
+           "}\n";
+}
+
+std::string AIAssistant::GenerateSerialCode() const {
+    return "// Serial Communication Example\n"
+           "void setup() {\n"
+           "  Serial.begin(115200);\n"
+           "  Serial.println(\"ESP32 Serial Monitor Started\");\n"
+           "}\n\n"
+           "void loop() {\n"
+           "  // Print messages\n"
+           "  Serial.print(\"Time: \");\n"
+           "  Serial.print(millis());\n"
+           "  Serial.println(\" ms\");\n"
+           "  \n"
+           "  // Read input if available\n"
+           "  if (Serial.available() > 0) {\n"
+           "    String input = Serial.readStringUntil('\\n');\n"
+           "    Serial.print(\"You sent: \");\n"
+           "    Serial.println(input);\n"
+           "  }\n"
+           "  \n"
+           "  delay(1000);\n"
+           "}\n";
+}
+
+std::string AIAssistant::GenerateSensorCode(const std::string& sensor_type) const {
+    if (sensor_type == "DHT") {
+        return "// DHT Temperature & Humidity Sensor Example\n"
+               "#include <DHT.h>\n\n"
+               "#define DHTPIN 4       // Pin connected to DHT sensor\n"
+               "#define DHTTYPE DHT22  // DHT 22 (AM2302)\n\n"
+               "DHT dht(DHTPIN, DHTTYPE);\n\n"
+               "void setup() {\n"
+               "  Serial.begin(115200);\n"
+               "  dht.begin();\n"
+               "  Serial.println(\"DHT Sensor initialized\");\n"
+               "}\n\n"
+               "void loop() {\n"
+               "  // Wait a few seconds between measurements\n"
+               "  delay(2000);\n"
+               "  \n"
+               "  // Read temperature and humidity\n"
+               "  float humidity = dht.readHumidity();\n"
+               "  float temperature = dht.readTemperature();\n"
+               "  \n"
+               "  // Check if readings are valid\n"
+               "  if (isnan(humidity) || isnan(temperature)) {\n"
+               "    Serial.println(\"Failed to read from DHT sensor!\");\n"
+               "    return;\n"
+               "  }\n"
+               "  \n"
+               "  Serial.print(\"Humidity: \");\n"
+               "  Serial.print(humidity);\n"
+               "  Serial.print(\"%  Temperature: \");\n"
+               "  Serial.print(temperature);\n"
+               "  Serial.println(\"°C\");\n"
+               "}\n";
+    }
+    
+    return "// Generic Sensor Example\n"
+           "#define SENSOR_PIN 34  // Analog input pin\n\n"
+           "void setup() {\n"
+           "  Serial.begin(115200);\n"
+           "}\n\n"
+           "void loop() {\n"
+           "  int sensorValue = analogRead(SENSOR_PIN);\n"
+           "  Serial.print(\"Sensor Value: \");\n"
+           "  Serial.println(sensorValue);\n"
+           "  delay(500);\n"
+           "}\n";
+}
+
 std::string AIAssistant::GenerateResponse(const std::string& query) const {
     std::string lower_query = query;
     std::transform(lower_query.begin(), lower_query.end(), lower_query.begin(), ::tolower);

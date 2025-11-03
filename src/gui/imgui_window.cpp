@@ -102,6 +102,7 @@ bool ImGuiWindow::Initialize(int width, int height) {
     window_ = glfwCreateWindow(width, height, "ESP32 Driver IDE", nullptr, nullptr);
     if (window_ == nullptr) {
         std::cerr << "Failed to create GLFW window" << std::endl;
+        std::cerr << "Check if display is available and OpenGL 3.3+ is supported" << std::endl;
         glfwTerminate();
         return false;
     }
@@ -112,14 +113,35 @@ bool ImGuiWindow::Initialize(int width, int height) {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    if (ImGui::GetCurrentContext() == nullptr) {
+        std::cerr << "Failed to create ImGui context" << std::endl;
+        glfwDestroyWindow(window_);
+        glfwTerminate();
+        return false;
+    }
+    
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     // Note: Docking feature requires ImGui docking branch
     // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(window_, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    if (!ImGui_ImplGlfw_InitForOpenGL(window_, true)) {
+        std::cerr << "Failed to initialize ImGui GLFW backend" << std::endl;
+        ImGui::DestroyContext();
+        glfwDestroyWindow(window_);
+        glfwTerminate();
+        return false;
+    }
+    
+    if (!ImGui_ImplOpenGL3_Init(glsl_version)) {
+        std::cerr << "Failed to initialize ImGui OpenGL3 backend" << std::endl;
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        glfwDestroyWindow(window_);
+        glfwTerminate();
+        return false;
+    }
     
     // Setup style
     SetupImGuiStyle();
@@ -131,6 +153,11 @@ bool ImGuiWindow::Initialize(int width, int height) {
 }
 
 void ImGuiWindow::Run() {
+    if (window_ == nullptr) {
+        std::cerr << "Cannot run: window not initialized" << std::endl;
+        return;
+    }
+    
     ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
     
     // Main loop
@@ -148,6 +175,11 @@ void ImGuiWindow::Run() {
         
         // Create main docking space
         ImGuiViewport* viewport = ImGui::GetMainViewport();
+        if (viewport == nullptr) {
+            ImGui::Render();
+            continue;
+        }
+        
         ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + 80)); // After menu and toolbar
         ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, viewport->Size.y - 280)); // Leave space for console
         
@@ -926,7 +958,7 @@ void ImGuiWindow::DownloadFirmware() {
 }
 
 void ImGuiWindow::SaveCurrentTab() {
-    if (editor_tabs_.empty() || active_editor_tab_ >= editor_tabs_.size()) {
+    if (editor_tabs_.empty() || active_editor_tab_ >= static_cast<int>(editor_tabs_.size())) {
         AddConsoleMessage("Error: No file to save");
         return;
     }
@@ -938,6 +970,8 @@ void ImGuiWindow::SaveCurrentTab() {
         file_manager_->SaveFile(tab.filename);
         tab.is_modified = false;
         AddConsoleMessage("Saved file: " + tab.filename);
+    } else {
+        AddConsoleMessage("⚠ File manager not initialized");
     }
 }
 
@@ -1016,8 +1050,12 @@ void ImGuiWindow::RenderAIAssistant() {
         ImGui::BulletText("Sensor integration");
         ImGui::BulletText("Code debugging");
         ImGui::BulletText("Best practices");
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "💡 Try: 'Generate code for LED blink'");
     } else {
-        for (const auto& exchange : ai_chat_history_) {
+        for (size_t i = 0; i < ai_chat_history_.size(); i++) {
+            const auto& exchange = ai_chat_history_[i];
+            
             // User message
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
             ImGui::TextWrapped("You: %s", exchange.first.c_str());
@@ -1028,6 +1066,23 @@ void ImGuiWindow::RenderAIAssistant() {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 1.0f, 0.4f, 1.0f));
             ImGui::TextWrapped("AI: %s", exchange.second.c_str());
             ImGui::PopStyleColor();
+            
+            // Check if response contains code (multi-line with code markers)
+            bool has_code = exchange.second.find("void setup()") != std::string::npos ||
+                           exchange.second.find("void loop()") != std::string::npos ||
+                           exchange.second.find("#include") != std::string::npos;
+            
+            if (has_code) {
+                ImGui::SameLine();
+                std::string button_label = "Insert Code##" + std::to_string(i);
+                if (ImGui::Button(button_label.c_str())) {
+                    // Extract code from response
+                    std::string code = exchange.second;
+                    InsertCodeIntoEditor(code);
+                    AddConsoleMessage("Code inserted into active editor tab");
+                }
+            }
+            
             ImGui::Separator();
         }
     }
@@ -1071,8 +1126,14 @@ void ImGuiWindow::SendAIMessage(const std::string& message) {
     // Query AI assistant with code context
     std::string response;
     
+    // Check if it's a code generation request
+    std::string generated_code = ai_assistant->GenerateCode(message);
+    if (!generated_code.empty()) {
+        response = "Here's the code you requested:\n\n" + generated_code + 
+                   "\n\nClick 'Insert Code' to add it to your editor!";
+    }
     // If message asks about code, provide context
-    if (!current_code.empty() && 
+    else if (!current_code.empty() && 
         (message.find("code") != std::string::npos || 
          message.find("error") != std::string::npos ||
          message.find("fix") != std::string::npos ||
@@ -1134,6 +1195,35 @@ void ImGuiWindow::SetupImGuiStyle() {
     style.ScrollbarRounding = 3.0f;
     style.GrabRounding      = 3.0f;
     style.TabRounding       = 3.0f;
+}
+
+void ImGuiWindow::InsertCodeIntoEditor(const std::string& code) {
+    if (editor_tabs_.empty() || active_editor_tab_ >= static_cast<int>(editor_tabs_.size())) {
+        AddConsoleMessage("⚠ No active editor tab to insert code into");
+        return;
+    }
+    
+    auto& tab = editor_tabs_[active_editor_tab_];
+    
+    // Replace current content with the new code
+    tab.content = code;
+    tab.is_modified = true;
+    line_count_dirty_ = true;
+    
+    // Update the buffer with bounds checking
+    size_t code_length = code.length();
+    if (code_length >= EDITOR_BUFFER_SIZE) {
+        code_length = EDITOR_BUFFER_SIZE - 1;
+        AddConsoleMessage("⚠ Code truncated to fit buffer");
+    }
+    std::snprintf(tab.buffer, EDITOR_BUFFER_SIZE, "%s", tab.content.c_str());
+    
+    // Update text editor if available
+    if (text_editor_) {
+        text_editor_->SetText(tab.content);
+    }
+    
+    AddConsoleMessage("✓ Code inserted into " + tab.filename);
 }
 
 } // namespace gui

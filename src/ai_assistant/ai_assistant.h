@@ -34,6 +34,14 @@ public:
     std::string AnalyzeCode(const std::string& code);
     std::string SuggestFix(const std::string& error_message);
     
+    // Code generation
+    std::string GenerateCode(const std::string& request);
+    std::string GenerateGPIOCode(const std::string& request) const;
+    std::string GenerateWiFiCode() const;
+    std::string GenerateBluetoothCode() const;
+    std::string GenerateSerialCode() const;
+    std::string GenerateSensorCode(const std::string& sensor_type) const;
+    
 private:
     std::vector<Message> history_;
     
