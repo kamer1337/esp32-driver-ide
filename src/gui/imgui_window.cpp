@@ -577,22 +577,91 @@ void ImGuiWindow::RenderDebuggerTab() {
     ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ Device connected: %s", selected_port_.c_str());
     ImGui::Spacing();
     
-    if (ImGui::Button("Start Debugging")) {
-        DebugCode();
+    // Debugging controls
+    bool is_reading = serial_monitor_ && serial_monitor_->IsRealtimeReading();
+    
+    if (!is_reading) {
+        if (ImGui::Button("Start Debugging")) {
+            DebugCode();
+            if (serial_monitor_) {
+                serial_monitor_->StartRealtimeReading();
+            }
+        }
+    } else {
+        if (ImGui::Button("Stop Debugging")) {
+            if (serial_monitor_) {
+                serial_monitor_->StopRealtimeReading();
+            }
+            AddConsoleMessage("Debugging stopped");
+        }
     }
     
     ImGui::SameLine();
-    if (ImGui::Button("Stop")) {
-        AddConsoleMessage("Debugging stopped");
+    if (ImGui::Button("Clear Data")) {
+        if (serial_monitor_) {
+            serial_monitor_->ClearRealtimeData();
+        }
+        AddConsoleMessage("Cleared realtime data");
     }
     
     ImGui::Separator();
-    ImGui::Text("Breakpoints:");
-    ImGui::BulletText("No breakpoints set");
+    ImGui::Text("Realtime Device Data:");
+    
+    // Show realtime data from device
+    ImGui::BeginChild("RealtimeData", ImVec2(0, 200), true);
+    if (serial_monitor_ && is_reading) {
+        auto data = serial_monitor_->GetRealtimeData();
+        for (const auto& line : data) {
+            // Color code different types of messages
+            if (line.find("ERROR") != std::string::npos || line.find("Failed") != std::string::npos) {
+                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", line.c_str());
+            } else if (line.find("WARNING") != std::string::npos) {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "%s", line.c_str());
+            } else if (line.find("Connected") != std::string::npos || line.find("SUCCESS") != std::string::npos) {
+                ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "%s", line.c_str());
+            } else {
+                ImGui::Text("%s", line.c_str());
+            }
+        }
+    } else {
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Click 'Start Debugging' to begin reading data from device");
+    }
+    ImGui::EndChild();
     
     ImGui::Separator();
-    ImGui::Text("Variables:");
-    ImGui::BulletText("Debug session not active");
+    ImGui::Text("Breakpoints:");
+    ImGui::BeginChild("Breakpoints", ImVec2(0, 80), true);
+    ImGui::BulletText("No breakpoints set");
+    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Click line numbers in editor to set breakpoints (future feature)");
+    ImGui::EndChild();
+    
+    ImGui::Separator();
+    ImGui::Text("Variables & Registers:");
+    ImGui::BeginChild("Variables", ImVec2(0, 0), true);
+    if (is_reading) {
+        ImGui::Columns(2);
+        ImGui::Text("Variable"); ImGui::NextColumn();
+        ImGui::Text("Value"); ImGui::NextColumn();
+        ImGui::Separator();
+        
+        // Simulate variable inspection
+        ImGui::Text("Free Heap"); ImGui::NextColumn();
+        ImGui::Text("280000 bytes"); ImGui::NextColumn();
+        
+        ImGui::Text("WiFi Status"); ImGui::NextColumn();
+        ImGui::Text("Connected"); ImGui::NextColumn();
+        
+        ImGui::Text("GPIO2"); ImGui::NextColumn();
+        ImGui::Text("HIGH"); ImGui::NextColumn();
+        
+        ImGui::Text("CPU Freq"); ImGui::NextColumn();
+        ImGui::Text("240 MHz"); ImGui::NextColumn();
+        
+        ImGui::Columns(1);
+    } else {
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Start debugging to see variables");
+    }
+    ImGui::EndChild();
 }
 
 void ImGuiWindow::RenderReverseEngineeringTab() {

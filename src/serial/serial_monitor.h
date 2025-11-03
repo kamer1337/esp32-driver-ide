@@ -55,14 +55,24 @@ public:
     std::string GetCurrentPort() const;
     int GetBaudRate() const;
     
+    // Realtime data reading
+    void StartRealtimeReading();
+    void StopRealtimeReading();
+    bool IsRealtimeReading() const;
+    std::vector<std::string> GetRealtimeData() const;
+    void ClearRealtimeData();
+    
 private:
     bool connected_;
     std::string current_port_;
     int baud_rate_;
     std::vector<SerialMessage> messages_;
     MessageCallback message_callback_;
+    bool realtime_reading_;
+    std::vector<std::string> realtime_data_;
     
     void NotifyMessage(const SerialMessage& message);
+    void SimulateDataReading();
 };
 
 } // namespace esp32_ide
