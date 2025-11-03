@@ -1027,7 +1027,7 @@ void ImGuiWindow::DownloadFirmware() {
 }
 
 void ImGuiWindow::SaveCurrentTab() {
-    if (editor_tabs_.empty() || active_editor_tab_ >= static_cast<int>(editor_tabs_.size())) {
+    if (!IsValidTabIndex(active_editor_tab_)) {
         AddConsoleMessage("Error: No file to save");
         return;
     }
@@ -1136,12 +1136,8 @@ void ImGuiWindow::RenderAIAssistant() {
             ImGui::TextWrapped("AI: %s", exchange.second.c_str());
             ImGui::PopStyleColor();
             
-            // Check if response contains code (multi-line with code markers)
-            bool has_code = exchange.second.find("void setup()") != std::string::npos ||
-                           exchange.second.find("void loop()") != std::string::npos ||
-                           exchange.second.find("#include") != std::string::npos;
-            
-            if (has_code) {
+            // Check if response contains code using helper method
+            if (ContainsCode(exchange.second)) {
                 ImGui::SameLine();
                 std::string button_label = "Insert Code##" + std::to_string(i);
                 if (ImGui::Button(button_label.c_str())) {
@@ -1267,25 +1263,28 @@ void ImGuiWindow::SetupImGuiStyle() {
 }
 
 void ImGuiWindow::InsertCodeIntoEditor(const std::string& code) {
-    if (editor_tabs_.empty() || active_editor_tab_ >= static_cast<int>(editor_tabs_.size())) {
+    if (!IsValidTabIndex(active_editor_tab_)) {
         AddConsoleMessage("⚠ No active editor tab to insert code into");
         return;
     }
     
     auto& tab = editor_tabs_[active_editor_tab_];
     
-    // Replace current content with the new code
-    tab.content = code;
+    // Check if code will fit in buffer
+    if (code.length() >= EDITOR_BUFFER_SIZE) {
+        AddConsoleMessage("⚠ Code too large for buffer, truncating");
+        tab.content = code.substr(0, EDITOR_BUFFER_SIZE - 1);
+    } else {
+        tab.content = code;
+    }
+    
     tab.is_modified = true;
     line_count_dirty_ = true;
     
-    // Update the buffer with bounds checking
-    size_t code_length = code.length();
-    if (code_length >= EDITOR_BUFFER_SIZE) {
-        code_length = EDITOR_BUFFER_SIZE - 1;
-        AddConsoleMessage("⚠ Code truncated to fit buffer");
-    }
-    std::snprintf(tab.buffer, EDITOR_BUFFER_SIZE, "%s", tab.content.c_str());
+    // Safely copy to buffer with size checking
+    size_t safe_length = std::min(tab.content.length(), static_cast<size_t>(EDITOR_BUFFER_SIZE - 1));
+    strncpy(tab.buffer, tab.content.c_str(), safe_length);
+    tab.buffer[safe_length] = '\0';  // Ensure null termination
     
     // Update text editor if available
     if (text_editor_) {
@@ -1293,6 +1292,16 @@ void ImGuiWindow::InsertCodeIntoEditor(const std::string& code) {
     }
     
     AddConsoleMessage("✓ Code inserted into " + tab.filename);
+}
+
+bool ImGuiWindow::IsValidTabIndex(int index) const {
+    return !editor_tabs_.empty() && index >= 0 && index < static_cast<int>(editor_tabs_.size());
+}
+
+bool ImGuiWindow::ContainsCode(const std::string& text) const {
+    return text.find(CODE_MARKER_SETUP) != std::string::npos ||
+           text.find(CODE_MARKER_LOOP) != std::string::npos ||
+           text.find(CODE_MARKER_INCLUDE) != std::string::npos;
 }
 
 } // namespace gui

@@ -4,10 +4,26 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 
 ![ESP32 Driver IDE](https://github.com/user-attachments/assets/18511046-9c87-48ff-a377-960e97afd9f3)
 
-## ✨ New: ImGui Interface
+## ✨ Latest Update: AI Code Generation & Realtime Debugging
 
-The IDE now features a complete ImGui-based GUI with:
-- **Three-panel layout**: File Explorer (left), Editor/Debugger/RE (center), Properties (right)
+**🤖 AI-Powered Code Writing**: The AI assistant can now generate complete, working code snippets and insert them directly into your editor!
+
+**🔍 Realtime Device Debugging**: Monitor live data from your ESP32 device with variable inspection and color-coded messages!
+
+📖 **[Read the AI Code Generation Guide](AI_CODE_GENERATION.md)**
+
+### New Capabilities
+
+- **Generate Code**: Ask AI to "Generate code for LED blink" and get working code instantly
+- **Insert Directly**: One-click code insertion into your active editor tab
+- **Live Debugging**: Start debugging to see real-time data from your connected device
+- **Variable Inspection**: Monitor heap memory, WiFi status, GPIO states, and more
+- **Enhanced Safety**: Improved error handling prevents crashes and white screens
+
+## ✨ ImGui Interface
+
+The IDE features a complete ImGui-based GUI with:
+- **Four-panel layout**: File Explorer (left), Editor/Debugger/RE (center), Properties (right), AI Assistant (far right)
 - **Professional toolbar**: USB port selector, Upload, Download, Debug, and Reverse Engineering buttons
 - **Multi-tab center panel**: Switch between Editor, Debugger, and Reverse Engineering views
 - **Real-time console**: See compilation, upload, and debug output
@@ -20,26 +36,40 @@ The IDE now features a complete ImGui-based GUI with:
 ### 🔧 Code Editor
 - **Syntax Highlighting**: Full C/C++ syntax highlighting optimized for ESP32/Arduino code
 - **Undo/Redo**: Complete undo/redo functionality
-- **Multiple Files**: Support for managing multiple source files
+- **Multiple Files**: Support for managing multiple source files in tabs
 - **Code Search**: Find and replace functionality
 - **Line Management**: Line-based operations and navigation
+- **Hierarchical File Tree**: Folder-subfolder-file.ino structure
 
-### 🤖 AI Assistant
+### 🤖 AI Assistant (Enhanced!)
 - **Integrated Chat**: Ask questions about ESP32 APIs, debugging, and best practices
+- **Code Generation**: Generate complete working code for LED, WiFi, Bluetooth, sensors, and more
+- **Direct Code Insertion**: Insert generated code into editor with one click
 - **Code Analysis**: Get suggestions and improvements for your code
 - **Context-Aware**: Understands ESP32-specific development challenges
 - **Error Suggestions**: Provides fixes for common errors
+- **Interactive Learning**: Learn by generating and modifying AI-created code
+
+### 🔍 Realtime Debugging (New!)
+- **Live Data Monitoring**: Stream real-time data from connected ESP32 devices
+- **Variable Inspection**: View heap memory, WiFi status, GPIO states, CPU frequency
+- **Color-Coded Output**: Red for errors, yellow for warnings, green for success
+- **Breakpoint Support**: Framework ready for breakpoint debugging (coming soon)
+- **Device Validation**: Ensures USB connection before debugging operations
 
 ### ⚙️ ESP32 Development Tools
 - **Compile**: Syntax checking and compilation
 - **Upload**: Code uploading to ESP32 devices
+- **Download**: Firmware extraction from connected devices
 - **Board Selection**: Support for multiple ESP32 variants (ESP32, S2, S3, C3)
-- **Serial Monitor**: Real-time serial communication
+- **Serial Monitor**: Real-time serial communication with data streaming
 
 ### 📁 File Management
 - **Create/Open/Save Files**: Complete file management
+- **Folder Structure**: Hierarchical file tree with folders and subfolders
+- **Multiple Tabs**: Open multiple files simultaneously in separate tabs
 - **Project Support**: Load and save entire projects
-- **Auto-save**: Automatic file saving
+- **Modified Tracking**: Visual indicators for unsaved changes
 - **File Switching**: Quick navigation between files
 
 ## Building from Source
