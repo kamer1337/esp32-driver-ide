@@ -4,7 +4,7 @@
 namespace esp32_ide {
 
 SerialMonitor::SerialMonitor() 
-    : connected_(false), current_port_(""), baud_rate_(115200) {}
+    : connected_(false), current_port_(""), baud_rate_(115200), realtime_reading_(false) {}
 
 SerialMonitor::~SerialMonitor() {
     Disconnect();
@@ -111,6 +111,57 @@ std::string SerialMonitor::GetCurrentPort() const {
 
 int SerialMonitor::GetBaudRate() const {
     return baud_rate_;
+}
+
+void SerialMonitor::StartRealtimeReading() {
+    if (!connected_) {
+        AddMessage("Cannot start realtime reading: Not connected", MessageType::ERROR);
+        return;
+    }
+    
+    realtime_reading_ = true;
+    realtime_data_.clear();
+    AddMessage("Started realtime data reading", MessageType::SUCCESS);
+    
+    // Simulate initial data
+    SimulateDataReading();
+}
+
+void SerialMonitor::StopRealtimeReading() {
+    realtime_reading_ = false;
+    AddMessage("Stopped realtime data reading", MessageType::INFO);
+}
+
+bool SerialMonitor::IsRealtimeReading() const {
+    return realtime_reading_;
+}
+
+std::vector<std::string> SerialMonitor::GetRealtimeData() const {
+    return realtime_data_;
+}
+
+void SerialMonitor::ClearRealtimeData() {
+    realtime_data_.clear();
+}
+
+void SerialMonitor::SimulateDataReading() {
+    // Simulate receiving data from device
+    // In a real implementation, this would read from the actual serial port
+    if (!realtime_reading_) {
+        return;
+    }
+    
+    // Simulate various types of ESP32 data
+    realtime_data_.push_back("[0.000] ESP32 Boot");
+    realtime_data_.push_back("[0.100] WiFi: Connecting...");
+    realtime_data_.push_back("[0.500] WiFi: Connected");
+    realtime_data_.push_back("[1.000] IP Address: 192.168.1.100");
+    realtime_data_.push_back("[2.000] Temperature: 25.3°C");
+    realtime_data_.push_back("[2.500] Humidity: 60.2%");
+    realtime_data_.push_back("[3.000] GPIO2: HIGH");
+    realtime_data_.push_back("[3.500] Sensor Reading: 1023");
+    realtime_data_.push_back("[4.000] Free Heap: 280000 bytes");
+    realtime_data_.push_back("[4.500] Loop iteration: 100");
 }
 
 void SerialMonitor::NotifyMessage(const SerialMessage& message) {

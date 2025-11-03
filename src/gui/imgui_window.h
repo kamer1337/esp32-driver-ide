@@ -108,6 +108,11 @@ private:
     std::vector<std::pair<std::string, std::string>> ai_chat_history_; // (user, assistant) pairs
     bool ai_scroll_to_bottom_;
     
+    // Code detection markers
+    static constexpr const char* CODE_MARKER_SETUP = "void setup()";
+    static constexpr const char* CODE_MARKER_LOOP = "void loop()";
+    static constexpr const char* CODE_MARKER_INCLUDE = "#include";
+    
     // UI rendering methods
     void RenderMainMenuBar();
     void RenderToolbar();
@@ -139,6 +144,9 @@ private:
     void AddConsoleMessage(const std::string& message);
     void SendAIMessage(const std::string& message);
     void RenderFileNode(FileNode& node, const std::string& parent_path);
+    void InsertCodeIntoEditor(const std::string& code);
+    bool IsValidTabIndex(int index) const;
+    bool ContainsCode(const std::string& text) const;
     
     // ImGui setup
     void SetupImGuiStyle();
