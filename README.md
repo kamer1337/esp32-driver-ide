@@ -49,7 +49,7 @@ The IDE now features a complete ImGui-based GUI with:
 #### Linux (Ubuntu/Debian)
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake libglfw3-dev libgl1-mesa-dev
+sudo apt-get install build-essential cmake libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 ```
 
 #### macOS
@@ -58,7 +58,7 @@ sudo apt-get install build-essential cmake libglfw3-dev libgl1-mesa-dev
 xcode-select --install
 
 # Install dependencies
-brew install cmake glfw
+brew install cmake
 ```
 
 #### Windows
@@ -71,6 +71,9 @@ brew install cmake glfw
 # Clone the repository
 git clone https://github.com/kamer1337/esp32-driver-ide.git
 cd esp32-driver-ide
+
+# Initialize and update submodules (includes glfw3)
+git submodule update --init --recursive
 
 # Create build directory
 mkdir build
