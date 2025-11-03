@@ -10,7 +10,8 @@
 
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include <cstring>
+#include <cstdio>
+#include <algorithm>
 
 namespace esp32_ide {
 namespace gui {
@@ -33,8 +34,8 @@ ImGuiWindow::ImGuiWindow()
       scroll_to_bottom_(false),
       selected_file_index_(-1) {
     
-    // Initialize editor buffer
-    std::memset(editor_buffer_, 0, sizeof(editor_buffer_));
+    // Initialize editor buffer with empty content (lazy initialization is better than memset)
+    editor_buffer_[0] = '\0';
     
     // Initialize baud rates
     baud_rates_ = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
@@ -205,7 +206,7 @@ void ImGuiWindow::RenderMainMenuBar() {
             if (ImGui::MenuItem("New", "Ctrl+N")) {
                 current_file_ = "new_sketch.ino";
                 editor_content_ = "void setup() {\n  // put your setup code here, to run once:\n\n}\n\nvoid loop() {\n  // put your main code here, to run repeatedly:\n\n}\n";
-                std::strncpy(editor_buffer_, editor_content_.c_str(), sizeof(editor_buffer_) - 1);
+                std::snprintf(editor_buffer_, sizeof(editor_buffer_), "%s", editor_content_.c_str());
                 AddConsoleMessage("Created new file");
             }
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
@@ -331,7 +332,7 @@ void ImGuiWindow::RenderFileExplorer() {
     if (ImGui::Button("New File")) {
         current_file_ = "new_sketch.ino";
         editor_content_ = "void setup() {\n\n}\n\nvoid loop() {\n\n}\n";
-        std::strncpy(editor_buffer_, editor_content_.c_str(), sizeof(editor_buffer_) - 1);
+        std::snprintf(editor_buffer_, sizeof(editor_buffer_), "%s", editor_content_.c_str());
         RefreshFileList();
     }
     
@@ -553,7 +554,7 @@ void ImGuiWindow::LoadFile(const std::string& filename) {
         editor_content_ = "// File: " + filename + "\n\nvoid setup() {\n\n}\n\nvoid loop() {\n\n}\n";
     }
     
-    std::strncpy(editor_buffer_, editor_content_.c_str(), sizeof(editor_buffer_) - 1);
+    std::snprintf(editor_buffer_, sizeof(editor_buffer_), "%s", editor_content_.c_str());
     
     if (text_editor_) {
         text_editor_->SetText(editor_content_);
