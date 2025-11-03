@@ -5,9 +5,9 @@
 ### Linux (Ubuntu/Debian)
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake g++
+sudo apt-get install build-essential cmake g++ libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
-# Optional: For GUI support
+# Optional: For GTK GUI support
 sudo apt-get install libgtk-3-dev
 ```
 
@@ -32,6 +32,9 @@ brew install cmake
 # Clone repository
 git clone https://github.com/kamer1337/esp32-driver-ide.git
 cd esp32-driver-ide
+
+# Initialize and update submodules (includes glfw3)
+git submodule update --init --recursive
 
 # Create build directory
 mkdir build

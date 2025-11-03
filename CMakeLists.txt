@@ -9,7 +9,17 @@ option(BUILD_TESTS "Build test programs" OFF)
 
 # Find required packages for ImGui
 find_package(OpenGL REQUIRED)
-find_package(glfw3 REQUIRED)
+
+# GLFW options - disable unnecessary features
+option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
+option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
+option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
+option(GLFW_INSTALL "Generate installation target" OFF)
+option(GLFW_BUILD_WAYLAND "Build support for Wayland" OFF)
+option(GLFW_BUILD_X11 "Build support for X11" ON)
+
+# Add GLFW subdirectory
+add_subdirectory(external/glfw)
 
 # ImGui source files
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui)
