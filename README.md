@@ -1,6 +1,19 @@
 # ESP32 Driver IDE (C++ Version)
 
-A modern, native C++ IDE for ESP32 development with an integrated AI assistant to help you write better code faster.
+A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **professional ImGui-based graphical interface**.
+
+![ESP32 Driver IDE](https://github.com/user-attachments/assets/18511046-9c87-48ff-a377-960e97afd9f3)
+
+## ✨ New: ImGui Interface
+
+The IDE now features a complete ImGui-based GUI with:
+- **Three-panel layout**: File Explorer (left), Editor/Debugger/RE (center), Properties (right)
+- **Professional toolbar**: USB port selector, Upload, Download, Debug, and Reverse Engineering buttons
+- **Multi-tab center panel**: Switch between Editor, Debugger, and Reverse Engineering views
+- **Real-time console**: See compilation, upload, and debug output
+- **Dark theme**: Professional appearance optimized for long coding sessions
+
+📖 **[Read the complete ImGui Interface Guide](IMGUI_GUIDE.md)**
 
 ## Features
 
@@ -36,7 +49,7 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant t
 #### Linux (Ubuntu/Debian)
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake libgtk-3-dev
+sudo apt-get install build-essential cmake libglfw3-dev libgl1-mesa-dev
 ```
 
 #### macOS
@@ -44,8 +57,8 @@ sudo apt-get install build-essential cmake libgtk-3-dev
 # Install Xcode Command Line Tools
 xcode-select --install
 
-# Install CMake (if not already installed)
-brew install cmake
+# Install dependencies
+brew install cmake glfw
 ```
 
 #### Windows
@@ -168,7 +181,38 @@ All roadmap items are now complete or have framework ready for implementation!
 
 ## GUI Implementation
 
-The current implementation provides a complete framework with all core functionality. The GUI layer needs platform-specific implementation:
+The IDE now includes a complete **ImGui-based graphical interface** with:
+
+### Interface Layout
+- **Left Panel**: File Explorer for project navigation
+- **Center Panel**: 
+  - Editor tab for code editing
+  - Debugger tab for debugging sessions
+  - Reverse Engineering tab for firmware analysis
+- **Right Panel**: Editor properties and board configuration
+- **Top Toolbar**: USB port selector, Upload, Download, Debug, RE buttons
+- **Bottom Console**: Real-time output and status messages
+
+### Technology Stack
+- **GUI Framework**: Dear ImGui v1.90.1
+- **Windowing**: GLFW3
+- **Rendering**: OpenGL 3.3+
+- **Backend Integration**: All existing components (TextEditor, FileManager, Compiler, SerialMonitor)
+
+### Quick Start with GUI
+```bash
+# Build and run
+mkdir build && cd build
+cmake ..
+cmake --build .
+./esp32-driver-ide
+```
+
+For detailed usage instructions, see **[IMGUI_GUIDE.md](IMGUI_GUIDE.md)**.
+
+## Previous GUI Information
+
+The original implementation framework supports multiple GUI options:
 
 ### Platform Options
 
