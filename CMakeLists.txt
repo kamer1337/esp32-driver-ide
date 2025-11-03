@@ -7,6 +7,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Options
 option(BUILD_TESTS "Build test programs" OFF)
 
+# Find required packages for ImGui
+find_package(OpenGL REQUIRED)
+find_package(glfw3 REQUIRED)
+
+# ImGui source files
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui)
+set(IMGUI_SOURCES
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+)
+
 # Source files
 set(SOURCES
     src/main.cpp
@@ -18,7 +33,9 @@ set(SOURCES
     src/serial/serial_monitor.cpp
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
+    src/gui/imgui_window.cpp
     src/utils/string_utils.cpp
+    ${IMGUI_SOURCES}
 )
 
 # Header files
@@ -31,6 +48,7 @@ set(HEADERS
     src/serial/serial_monitor.h
     src/gui/main_window.h
     src/gui/console_widget.h
+    src/gui/imgui_window.h
     src/utils/string_utils.h
 )
 
@@ -53,6 +71,16 @@ add_executable(esp32-driver-ide-demo
 # Include directories
 target_include_directories(esp32-driver-ide PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
+    ${OPENGL_INCLUDE_DIR}
+)
+
+# Link libraries
+target_link_libraries(esp32-driver-ide PRIVATE
+    glfw
+    ${OPENGL_LIBRARIES}
+    ${CMAKE_DL_LIBS}
 )
 
 target_include_directories(esp32-driver-ide-demo PRIVATE
