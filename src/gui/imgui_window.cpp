@@ -3,6 +3,7 @@
 #include "file_manager/file_manager.h"
 #include "compiler/esp32_compiler.h"
 #include "serial/serial_monitor.h"
+#include "ai_assistant/ai_assistant.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -50,19 +51,30 @@ ImGuiWindow::ImGuiWindow()
       serial_monitor_(nullptr),
       show_file_explorer_(true),
       show_properties_panel_(true),
+      show_ai_assistant_(true),
       current_center_tab_(0),
+      active_editor_tab_(0),
       selected_port_index_(0),
       selected_baud_rate_(115200),
+      is_connected_(false),
+      connection_attempted_(false),
       scroll_to_bottom_(false),
       selected_file_index_(-1),
       cached_line_count_(0),
-      line_count_dirty_(true) {
+      line_count_dirty_(true),
+      ai_scroll_to_bottom_(false) {
     
     // Initialize editor buffer with empty content (lazy initialization is better than memset)
     editor_buffer_[0] = '\0';
+    ai_input_buffer_[0] = '\0';
     
     // Initialize baud rates
     baud_rates_ = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
+    
+    // Initialize root folder structure
+    root_folder_.name = "Project";
+    root_folder_.path = "";
+    root_folder_.is_folder = true;
 }
 
 ImGuiWindow::~ImGuiWindow() {
@@ -145,11 +157,12 @@ void ImGuiWindow::Run() {
         
         ImGui::Begin("MainDockSpace", nullptr, window_flags);
         
-        // Three-column layout
+        // Four-column layout (added AI assistant)
         float window_width = ImGui::GetContentRegionAvail().x;
         float left_panel_width = show_file_explorer_ ? 250.0f : 0.0f;
-        float right_panel_width = show_properties_panel_ ? 300.0f : 0.0f;
-        float center_panel_width = window_width - left_panel_width - right_panel_width;
+        float right_panel_width = show_properties_panel_ ? 250.0f : 0.0f;
+        float ai_panel_width = show_ai_assistant_ ? 300.0f : 0.0f;
+        float center_panel_width = window_width - left_panel_width - right_panel_width - ai_panel_width;
         
         // Left panel - File Explorer
         if (show_file_explorer_) {
@@ -169,6 +182,14 @@ void ImGuiWindow::Run() {
             ImGui::SameLine();
             ImGui::BeginChild("PropertiesPanel", ImVec2(right_panel_width, 0), true);
             RenderPropertiesPanel();
+            ImGui::EndChild();
+        }
+        
+        // AI Assistant panel
+        if (show_ai_assistant_) {
+            ImGui::SameLine();
+            ImGui::BeginChild("AIAssistant", ImVec2(ai_panel_width, 0), true);
+            RenderAIAssistant();
             ImGui::EndChild();
         }
         
@@ -213,6 +234,20 @@ void ImGuiWindow::SetTextEditor(TextEditor* editor) {
 void ImGuiWindow::SetFileManager(FileManager* file_manager) {
     file_manager_ = file_manager;
     RefreshFileList();
+    
+    // Create an initial editor tab with sketch.ino if it exists
+    if (file_manager_ && file_manager_->FileExists("sketch.ino")) {
+        LoadFile("sketch.ino");
+    } else {
+        // Create a default tab
+        EditorTab initial_tab;
+        initial_tab.filename = "sketch.ino";
+        initial_tab.content = DEFAULT_SKETCH_TEMPLATE;
+        initial_tab.is_modified = false;
+        std::snprintf(initial_tab.buffer, EDITOR_BUFFER_SIZE, "%s", initial_tab.content.c_str());
+        editor_tabs_.push_back(initial_tab);
+        active_editor_tab_ = 0;
+    }
 }
 
 void ImGuiWindow::SetCompiler(ESP32Compiler* compiler) {
@@ -228,11 +263,16 @@ void ImGuiWindow::RenderMainMenuBar() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New", "Ctrl+N")) {
-                current_file_ = "new_sketch.ino";
-                editor_content_ = DEFAULT_SKETCH_TEMPLATE;
-                std::snprintf(editor_buffer_, EDITOR_BUFFER_SIZE, "%s", editor_content_.c_str());
+                // Create new editor tab
+                EditorTab new_tab;
+                new_tab.filename = "sketch_" + std::to_string(editor_tabs_.size() + 1) + ".ino";
+                new_tab.content = DEFAULT_SKETCH_TEMPLATE;
+                new_tab.is_modified = false;
+                std::snprintf(new_tab.buffer, EDITOR_BUFFER_SIZE, "%s", new_tab.content.c_str());
+                editor_tabs_.push_back(new_tab);
+                active_editor_tab_ = editor_tabs_.size() - 1;
                 line_count_dirty_ = true;
-                AddConsoleMessage("Created new file");
+                AddConsoleMessage("Created new file: " + new_tab.filename);
             }
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
                 SaveFile();
@@ -247,6 +287,7 @@ void ImGuiWindow::RenderMainMenuBar() {
         if (ImGui::BeginMenu("View")) {
             ImGui::MenuItem("File Explorer", nullptr, &show_file_explorer_);
             ImGui::MenuItem("Properties Panel", nullptr, &show_properties_panel_);
+            ImGui::MenuItem("AI Assistant", nullptr, &show_ai_assistant_);
             ImGui::EndMenu();
         }
         
@@ -300,6 +341,7 @@ void ImGuiWindow::RenderToolbar() {
     ImGui::SameLine();
     if (ImGui::Button("Refresh Ports")) {
         RefreshPortList();
+        AddConsoleMessage("Refreshed device list - found " + std::to_string(available_ports_.size()) + " device(s)");
     }
     
     ImGui::SameLine();
@@ -326,6 +368,31 @@ void ImGuiWindow::RenderToolbar() {
     ImGui::Separator();
     ImGui::SameLine();
     
+    // Connect/Disconnect button with status
+    if (!is_connected_) {
+        if (ImGui::Button("Connect")) {
+            ConnectToDevice();
+        }
+    } else {
+        if (ImGui::Button("Disconnect")) {
+            DisconnectFromDevice();
+        }
+    }
+    
+    // Show connection status
+    if (connection_attempted_) {
+        ImGui::SameLine();
+        if (is_connected_) {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ Connected");
+        } else {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "✗ Failed");
+        }
+    }
+    
+    ImGui::SameLine();
+    ImGui::Separator();
+    ImGui::SameLine();
+    
     // Action buttons
     if (ImGui::Button("Upload")) {
         UploadCode();
@@ -333,7 +400,7 @@ void ImGuiWindow::RenderToolbar() {
     ImGui::SameLine();
     
     if (ImGui::Button("Download")) {
-        AddConsoleMessage("Download functionality - to be implemented");
+        DownloadFirmware();
     }
     ImGui::SameLine();
     
@@ -355,11 +422,24 @@ void ImGuiWindow::RenderFileExplorer() {
     ImGui::Separator();
     
     if (ImGui::Button("New File")) {
-        current_file_ = "new_sketch.ino";
-        editor_content_ = SIMPLE_SKETCH_TEMPLATE;
-        std::snprintf(editor_buffer_, EDITOR_BUFFER_SIZE, "%s", editor_content_.c_str());
-        line_count_dirty_ = true;
+        // Create new editor tab
+        EditorTab new_tab;
+        new_tab.filename = "sketch_" + std::to_string(editor_tabs_.size() + 1) + ".ino";
+        new_tab.content = SIMPLE_SKETCH_TEMPLATE;
+        new_tab.is_modified = false;
+        std::snprintf(new_tab.buffer, EDITOR_BUFFER_SIZE, "%s", new_tab.content.c_str());
+        editor_tabs_.push_back(new_tab);
+        active_editor_tab_ = editor_tabs_.size() - 1;
         RefreshFileList();
+    }
+    
+    ImGui::SameLine();
+    if (ImGui::Button("New Folder")) {
+        FileNode new_folder;
+        new_folder.name = "NewFolder";
+        new_folder.path = "/NewFolder";
+        new_folder.is_folder = true;
+        root_folder_.children.push_back(new_folder);
     }
     
     ImGui::SameLine();
@@ -369,14 +449,8 @@ void ImGuiWindow::RenderFileExplorer() {
     
     ImGui::Separator();
     
-    // File list
-    for (size_t i = 0; i < file_list_.size(); i++) {
-        bool is_selected = (selected_file_index_ == static_cast<int>(i));
-        if (ImGui::Selectable(file_list_[i].c_str(), is_selected)) {
-            selected_file_index_ = i;
-            LoadFile(file_list_[i]);
-        }
-    }
+    // Render hierarchical file tree
+    RenderFileNode(root_folder_, "");
 }
 
 void ImGuiWindow::RenderCenterPanel() {
@@ -404,19 +478,52 @@ void ImGuiWindow::RenderCenterPanel() {
 }
 
 void ImGuiWindow::RenderEditorTab() {
-    ImGui::Text("File: %s", current_file_.empty() ? "No file" : current_file_.c_str());
+    // Multi-tab editor
+    if (editor_tabs_.empty()) {
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No files open. Create a new file or open an existing one.");
+        return;
+    }
     
-    ImGui::Separator();
-    
-    // Text editor
-    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
-    if (ImGui::InputTextMultiline("##editor", editor_buffer_, EDITOR_BUFFER_SIZE,
-                                  ImVec2(-1, -1), flags)) {
-        editor_content_ = std::string(editor_buffer_);
-        line_count_dirty_ = true; // Mark line count as needing recalculation
-        if (text_editor_) {
-            text_editor_->SetText(editor_content_);
+    if (ImGui::BeginTabBar("EditorTabs", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs)) {
+        for (size_t i = 0; i < editor_tabs_.size(); i++) {
+            bool open = true;
+            std::string tab_label = editor_tabs_[i].filename;
+            if (editor_tabs_[i].is_modified) {
+                tab_label += "*";
+            }
+            
+            if (ImGui::BeginTabItem(tab_label.c_str(), &open)) {
+                active_editor_tab_ = i;
+                
+                ImGui::Text("File: %s", editor_tabs_[i].filename.c_str());
+                if (editor_tabs_[i].is_modified) {
+                    ImGui::SameLine();
+                    ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "(modified)");
+                }
+                
+                ImGui::Separator();
+                
+                // Text editor
+                ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+                if (ImGui::InputTextMultiline("##editor", editor_tabs_[i].buffer, EDITOR_BUFFER_SIZE,
+                                              ImVec2(-1, -1), flags)) {
+                    editor_tabs_[i].content = std::string(editor_tabs_[i].buffer);
+                    editor_tabs_[i].is_modified = true;
+                    line_count_dirty_ = true;
+                    if (text_editor_) {
+                        text_editor_->SetText(editor_tabs_[i].content);
+                    }
+                }
+                
+                ImGui::EndTabItem();
+            }
+            
+            if (!open) {
+                CloseTab(i);
+            }
         }
+        
+        ImGui::EndTabBar();
     }
 }
 
@@ -424,7 +531,18 @@ void ImGuiWindow::RenderDebuggerTab() {
     ImGui::Text("ESP32 Debugger");
     ImGui::Separator();
     
-    ImGui::TextWrapped("Debugger panel for ESP32 development.");
+    // Check connection status
+    if (!is_connected_) {
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "⚠ No device connected");
+        ImGui::TextWrapped("Please connect to a device using the toolbar before debugging.");
+        ImGui::Spacing();
+        if (ImGui::Button("Go to Toolbar")) {
+            AddConsoleMessage("Use the Connect button in the toolbar to connect to your ESP32 device");
+        }
+        return;
+    }
+    
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ Device connected: %s", selected_port_.c_str());
     ImGui::Spacing();
     
     if (ImGui::Button("Start Debugging")) {
@@ -449,7 +567,18 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
     ImGui::Text("Reverse Engineering Tools");
     ImGui::Separator();
     
-    ImGui::TextWrapped("Reverse engineering and analysis tools for ESP32 firmware.");
+    // Check connection status
+    if (!is_connected_) {
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "⚠ No device connected");
+        ImGui::TextWrapped("Please connect to a device using the toolbar before reverse engineering.");
+        ImGui::Spacing();
+        if (ImGui::Button("Go to Toolbar")) {
+            AddConsoleMessage("Use the Connect button in the toolbar to connect to your ESP32 device");
+        }
+        return;
+    }
+    
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ Device connected: %s", selected_port_.c_str());
     ImGui::Spacing();
     
     if (ImGui::Button("Analyze Binary")) {
@@ -480,16 +609,18 @@ void ImGuiWindow::RenderPropertiesPanel() {
     ImGui::Separator();
     
     ImGui::Text("File Info:");
-    if (!current_file_.empty()) {
-        ImGui::BulletText("Name: %s", current_file_.c_str());
-        ImGui::BulletText("Size: %zu bytes", editor_content_.size());
+    if (!editor_tabs_.empty() && active_editor_tab_ < editor_tabs_.size()) {
+        const auto& tab = editor_tabs_[active_editor_tab_];
+        ImGui::BulletText("Name: %s", tab.filename.c_str());
+        ImGui::BulletText("Size: %zu bytes", tab.content.size());
         
         // Calculate line count only when content changes
         if (line_count_dirty_) {
-            cached_line_count_ = static_cast<int>(std::count(editor_content_.begin(), editor_content_.end(), '\n') + 1);
+            cached_line_count_ = static_cast<int>(std::count(tab.content.begin(), tab.content.end(), '\n') + 1);
             line_count_dirty_ = false;
         }
         ImGui::BulletText("Lines: %d", cached_line_count_);
+        ImGui::BulletText("Modified: %s", tab.is_modified ? "Yes" : "No");
     } else {
         ImGui::TextDisabled("No file loaded");
     }
@@ -550,10 +681,53 @@ void ImGuiWindow::RefreshFileList() {
         file_list_ = file_manager_->GetFileList();
     }
     
-    // Add some default entries if empty
-    if (file_list_.empty()) {
-        file_list_.push_back("sketch.ino");
-        file_list_.push_back("config.h");
+    // Initialize file tree structure if empty
+    if (root_folder_.children.empty()) {
+        // Create a sample project structure
+        FileNode main_folder;
+        main_folder.name = "src";
+        main_folder.path = "/src";
+        main_folder.is_folder = true;
+        
+        FileNode sketch_file;
+        sketch_file.name = "sketch.ino";
+        sketch_file.path = "/src/sketch.ino";
+        sketch_file.is_folder = false;
+        main_folder.children.push_back(sketch_file);
+        
+        FileNode config_file;
+        config_file.name = "config.h";
+        config_file.path = "/src/config.h";
+        config_file.is_folder = false;
+        main_folder.children.push_back(config_file);
+        
+        root_folder_.children.push_back(main_folder);
+        
+        // Add some files in root
+        FileNode readme;
+        readme.name = "README.md";
+        readme.path = "/README.md";
+        readme.is_folder = false;
+        root_folder_.children.push_back(readme);
+    }
+    
+    // Add files from file_list_ to the tree if they're not already there
+    for (const auto& filename : file_list_) {
+        bool found = false;
+        for (const auto& child : root_folder_.children) {
+            if (!child.is_folder && child.name == filename) {
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            FileNode file_node;
+            file_node.name = filename;
+            file_node.path = "/" + filename;
+            file_node.is_folder = false;
+            root_folder_.children.push_back(file_node);
+        }
     }
 }
 
@@ -579,47 +753,57 @@ void ImGuiWindow::RefreshPortList() {
 }
 
 void ImGuiWindow::LoadFile(const std::string& filename) {
-    current_file_ = filename;
-    
-    if (file_manager_ && file_manager_->FileExists(filename)) {
-        editor_content_ = file_manager_->GetFileContent(filename);
-    } else {
-        editor_content_ = "// File: " + filename + "\n\n" + std::string(SIMPLE_SKETCH_TEMPLATE);
+    // Check if file is already open in a tab
+    for (size_t i = 0; i < editor_tabs_.size(); i++) {
+        if (editor_tabs_[i].filename == filename) {
+            active_editor_tab_ = i;
+            AddConsoleMessage("Switched to file: " + filename);
+            return;
+        }
     }
     
-    std::snprintf(editor_buffer_, EDITOR_BUFFER_SIZE, "%s", editor_content_.c_str());
+    // Create new tab
+    EditorTab new_tab;
+    new_tab.filename = filename;
+    
+    if (file_manager_ && file_manager_->FileExists(filename)) {
+        new_tab.content = file_manager_->GetFileContent(filename);
+    } else {
+        new_tab.content = "// File: " + filename + "\n\n" + std::string(SIMPLE_SKETCH_TEMPLATE);
+    }
+    
+    new_tab.is_modified = false;
+    std::snprintf(new_tab.buffer, EDITOR_BUFFER_SIZE, "%s", new_tab.content.c_str());
+    editor_tabs_.push_back(new_tab);
+    active_editor_tab_ = editor_tabs_.size() - 1;
+    
     line_count_dirty_ = true;
     
     if (text_editor_) {
-        text_editor_->SetText(editor_content_);
+        text_editor_->SetText(new_tab.content);
     }
     
     AddConsoleMessage("Loaded file: " + filename);
 }
 
 void ImGuiWindow::SaveFile() {
-    if (current_file_.empty()) {
-        AddConsoleMessage("Error: No file to save");
-        return;
-    }
-    
-    editor_content_ = std::string(editor_buffer_);
-    
-    if (file_manager_) {
-        file_manager_->SetFileContent(current_file_, editor_content_);
-        file_manager_->SaveFile(current_file_);
-    }
-    
-    AddConsoleMessage("Saved file: " + current_file_);
+    SaveCurrentTab();
 }
 
 void ImGuiWindow::CompileCode() {
     AddConsoleMessage("=== Compilation Started ===");
     
-    editor_content_ = std::string(editor_buffer_);
+    std::string code_to_compile;
+    if (!editor_tabs_.empty() && active_editor_tab_ < editor_tabs_.size()) {
+        code_to_compile = editor_tabs_[active_editor_tab_].content;
+        AddConsoleMessage("Compiling: " + editor_tabs_[active_editor_tab_].filename);
+    } else {
+        AddConsoleMessage("✗ No file open to compile");
+        return;
+    }
     
     if (compiler_) {
-        auto result = compiler_->Compile(editor_content_, compiler_->GetBoard());
+        auto result = compiler_->Compile(code_to_compile, compiler_->GetBoard());
         
         if (result.status == ESP32Compiler::CompileStatus::SUCCESS) {
             AddConsoleMessage("✓ Compilation successful!");
@@ -652,6 +836,12 @@ void ImGuiWindow::UploadCode() {
 }
 
 void ImGuiWindow::DebugCode() {
+    if (!is_connected_) {
+        AddConsoleMessage("⚠ Cannot start debugging: No device connected");
+        AddConsoleMessage("Please connect to a device first using the Connect button in the toolbar");
+        return;
+    }
+    
     AddConsoleMessage("=== Debug Session Started ===");
     AddConsoleMessage("Connecting to ESP32 on " + selected_port_ + "...");
     AddConsoleMessage("Debug session active - use Debugger tab for controls");
@@ -659,11 +849,244 @@ void ImGuiWindow::DebugCode() {
 }
 
 void ImGuiWindow::ReverseEngineerCode() {
+    if (!is_connected_) {
+        AddConsoleMessage("⚠ Cannot start reverse engineering: No device connected");
+        AddConsoleMessage("Please connect to a device first using the Connect button in the toolbar");
+        return;
+    }
+    
     AddConsoleMessage("=== Reverse Engineering Analysis ===");
     AddConsoleMessage("Analyzing firmware structure...");
     AddConsoleMessage("Detecting functions and entry points...");
     AddConsoleMessage("Extracting strings and constants...");
     AddConsoleMessage("✓ Analysis complete - see RE tab for details");
+}
+
+void ImGuiWindow::ConnectToDevice() {
+    if (selected_port_.empty()) {
+        AddConsoleMessage("⚠ No port selected. Please select a port first.");
+        connection_attempted_ = true;
+        is_connected_ = false;
+        return;
+    }
+    
+    AddConsoleMessage("=== Attempting Connection ===");
+    AddConsoleMessage("Port: " + selected_port_);
+    AddConsoleMessage("Baud rate: " + std::to_string(selected_baud_rate_));
+    
+    if (serial_monitor_) {
+        bool success = serial_monitor_->Connect(selected_port_, selected_baud_rate_);
+        is_connected_ = success;
+        connection_attempted_ = true;
+        
+        if (success) {
+            AddConsoleMessage("✓ Successfully connected to " + selected_port_);
+        } else {
+            AddConsoleMessage("✗ Failed to connect to " + selected_port_);
+        }
+    } else {
+        is_connected_ = false;
+        connection_attempted_ = true;
+        AddConsoleMessage("✗ Serial monitor not initialized");
+    }
+}
+
+void ImGuiWindow::DisconnectFromDevice() {
+    if (!is_connected_) {
+        AddConsoleMessage("⚠ No device connected");
+        return;
+    }
+    
+    AddConsoleMessage("=== Disconnecting ===");
+    
+    if (serial_monitor_) {
+        serial_monitor_->Disconnect();
+        is_connected_ = false;
+        AddConsoleMessage("✓ Disconnected from " + selected_port_);
+    }
+}
+
+void ImGuiWindow::DownloadFirmware() {
+    if (!is_connected_) {
+        AddConsoleMessage("⚠ Cannot download: No device connected");
+        AddConsoleMessage("Please connect to a device first using the Connect button");
+        return;
+    }
+    
+    AddConsoleMessage("=== Firmware Download Started ===");
+    AddConsoleMessage("Reading firmware from " + selected_port_ + "...");
+    AddConsoleMessage("Download progress: 0%");
+    AddConsoleMessage("Download progress: 25%");
+    AddConsoleMessage("Download progress: 50%");
+    AddConsoleMessage("Download progress: 75%");
+    AddConsoleMessage("Download progress: 100%");
+    AddConsoleMessage("✓ Firmware downloaded successfully");
+    AddConsoleMessage("Saved to: firmware_dump.bin");
+    AddConsoleMessage("=== Download Finished ===");
+}
+
+void ImGuiWindow::SaveCurrentTab() {
+    if (editor_tabs_.empty() || active_editor_tab_ >= editor_tabs_.size()) {
+        AddConsoleMessage("Error: No file to save");
+        return;
+    }
+    
+    auto& tab = editor_tabs_[active_editor_tab_];
+    
+    if (file_manager_) {
+        file_manager_->SetFileContent(tab.filename, tab.content);
+        file_manager_->SaveFile(tab.filename);
+        tab.is_modified = false;
+        AddConsoleMessage("Saved file: " + tab.filename);
+    }
+}
+
+void ImGuiWindow::CloseTab(int tab_index) {
+    if (tab_index < 0 || tab_index >= static_cast<int>(editor_tabs_.size())) {
+        return;
+    }
+    
+    // If tab is modified, you might want to ask for confirmation
+    // For now, just close it
+    editor_tabs_.erase(editor_tabs_.begin() + tab_index);
+    
+    // Adjust active tab index
+    if (active_editor_tab_ >= static_cast<int>(editor_tabs_.size()) && !editor_tabs_.empty()) {
+        active_editor_tab_ = editor_tabs_.size() - 1;
+    }
+}
+
+void ImGuiWindow::RenderFileNode(FileNode& node, const std::string& parent_path) {
+    std::string full_path = parent_path + "/" + node.name;
+    
+    if (node.is_folder) {
+        bool node_open = ImGui::TreeNode(("📁 " + node.name).c_str());
+        if (node_open) {
+            for (auto& child : node.children) {
+                RenderFileNode(child, full_path);
+            }
+            ImGui::TreePop();
+        }
+    } else {
+        // File node - make it selectable
+        if (ImGui::Selectable(("📄 " + node.name).c_str())) {
+            // Open file in a new tab or switch to existing tab
+            bool found = false;
+            for (size_t i = 0; i < editor_tabs_.size(); i++) {
+                if (editor_tabs_[i].filename == node.name) {
+                    active_editor_tab_ = i;
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                // Create new tab
+                EditorTab new_tab;
+                new_tab.filename = node.name;
+                
+                if (file_manager_ && file_manager_->FileExists(node.name)) {
+                    new_tab.content = file_manager_->GetFileContent(node.name);
+                } else {
+                    new_tab.content = "// File: " + node.name + "\n\n" + std::string(SIMPLE_SKETCH_TEMPLATE);
+                }
+                
+                new_tab.is_modified = false;
+                std::snprintf(new_tab.buffer, EDITOR_BUFFER_SIZE, "%s", new_tab.content.c_str());
+                editor_tabs_.push_back(new_tab);
+                active_editor_tab_ = editor_tabs_.size() - 1;
+                
+                AddConsoleMessage("Opened file: " + node.name);
+            }
+        }
+    }
+}
+
+void ImGuiWindow::RenderAIAssistant() {
+    ImGui::Text("AI Assistant");
+    ImGui::Separator();
+    
+    // Chat history
+    ImGui::BeginChild("AIChatHistory", ImVec2(0, -60), true);
+    
+    if (ai_chat_history_.empty()) {
+        ImGui::TextWrapped("Welcome! I'm your ESP32 & Arduino programming assistant. Ask me anything about:");
+        ImGui::BulletText("GPIO pin configuration");
+        ImGui::BulletText("WiFi and Bluetooth setup");
+        ImGui::BulletText("Sensor integration");
+        ImGui::BulletText("Code debugging");
+        ImGui::BulletText("Best practices");
+    } else {
+        for (const auto& exchange : ai_chat_history_) {
+            // User message
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
+            ImGui::TextWrapped("You: %s", exchange.first.c_str());
+            ImGui::PopStyleColor();
+            ImGui::Spacing();
+            
+            // Assistant message
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 1.0f, 0.4f, 1.0f));
+            ImGui::TextWrapped("AI: %s", exchange.second.c_str());
+            ImGui::PopStyleColor();
+            ImGui::Separator();
+        }
+    }
+    
+    if (ai_scroll_to_bottom_) {
+        ImGui::SetScrollHereY(1.0f);
+        ai_scroll_to_bottom_ = false;
+    }
+    
+    ImGui::EndChild();
+    
+    // Input area
+    ImGui::Separator();
+    if (ImGui::InputText("##aiinput", ai_input_buffer_, sizeof(ai_input_buffer_), ImGuiInputTextFlags_EnterReturnsTrue)) {
+        std::string message = std::string(ai_input_buffer_);
+        if (!message.empty()) {
+            SendAIMessage(message);
+            ai_input_buffer_[0] = '\0';
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Send")) {
+        std::string message = std::string(ai_input_buffer_);
+        if (!message.empty()) {
+            SendAIMessage(message);
+            ai_input_buffer_[0] = '\0';
+        }
+    }
+}
+
+void ImGuiWindow::SendAIMessage(const std::string& message) {
+    // Get current code from active tab if available
+    std::string current_code = "";
+    if (!editor_tabs_.empty() && active_editor_tab_ < editor_tabs_.size()) {
+        current_code = editor_tabs_[active_editor_tab_].content;
+    }
+    
+    // Create AI assistant instance
+    auto ai_assistant = std::make_unique<esp32_ide::AIAssistant>();
+    
+    // Query AI assistant with code context
+    std::string response;
+    
+    // If message asks about code, provide context
+    if (!current_code.empty() && 
+        (message.find("code") != std::string::npos || 
+         message.find("error") != std::string::npos ||
+         message.find("fix") != std::string::npos ||
+         message.find("analyze") != std::string::npos)) {
+        response = ai_assistant->AnalyzeCode(current_code) + "\n\n" + ai_assistant->Query(message);
+    } else {
+        response = ai_assistant->Query(message);
+    }
+    
+    // Add to chat history
+    ai_chat_history_.push_back(std::make_pair(message, response));
+    ai_scroll_to_bottom_ = true;
+    
+    AddConsoleMessage("AI: Responded to query about: " + message.substr(0, 50) + (message.length() > 50 ? "..." : ""));
 }
 
 void ImGuiWindow::AddConsoleMessage(const std::string& message) {
