@@ -20,6 +20,8 @@ class SyntaxHighlighter;
 
 namespace gui {
 
+class BlueprintEditor;
+
 /**
  * @brief ImGui-based window implementation for ESP32 Driver IDE
  * 
@@ -57,11 +59,14 @@ private:
     SerialMonitor* serial_monitor_;
     SyntaxHighlighter* syntax_highlighter_;
     
+    // Blueprint editor (owned)
+    std::unique_ptr<BlueprintEditor> blueprint_editor_;
+    
     // UI state
     bool show_file_explorer_;
     bool show_properties_panel_;
     bool show_ai_assistant_;
-    int current_center_tab_;  // 0=Editor, 1=Debugger, 2=Reverse-engineering
+    int current_center_tab_;  // 0=Editor, 1=Debugger, 2=Reverse-engineering, 3=Blueprint
     std::string current_file_;
     std::string editor_content_;
     static constexpr size_t EDITOR_BUFFER_SIZE = 1024 * 1024; // 1MB buffer
@@ -167,6 +172,7 @@ private:
     void RenderEditorTab();
     void RenderDebuggerTab();
     void RenderReverseEngineeringTab();
+    void RenderBlueprintTab();
     void RenderTerminalPanel();
     void RenderBoardListPanel();
     void RenderDeviceSchematic();

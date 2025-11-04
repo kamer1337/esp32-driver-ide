@@ -32,6 +32,15 @@ set(IMGUI_SOURCES
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
+# ImGui Node Editor source files
+set(IMGUI_NODE_EDITOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui-node-editor)
+set(IMGUI_NODE_EDITOR_SOURCES
+    ${IMGUI_NODE_EDITOR_DIR}/imgui_node_editor.cpp
+    ${IMGUI_NODE_EDITOR_DIR}/imgui_node_editor_api.cpp
+    ${IMGUI_NODE_EDITOR_DIR}/imgui_canvas.cpp
+    ${IMGUI_NODE_EDITOR_DIR}/crude_json.cpp
+)
+
 # Source files
 set(SOURCES
     src/main.cpp
@@ -44,8 +53,10 @@ set(SOURCES
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
     src/gui/imgui_window.cpp
+    src/gui/blueprint_editor.cpp
     src/utils/string_utils.cpp
     ${IMGUI_SOURCES}
+    ${IMGUI_NODE_EDITOR_SOURCES}
 )
 
 # Header files
@@ -59,6 +70,7 @@ set(HEADERS
     src/gui/main_window.h
     src/gui/console_widget.h
     src/gui/imgui_window.h
+    src/gui/blueprint_editor.h
     src/utils/string_utils.h
 )
 
@@ -83,6 +95,7 @@ target_include_directories(esp32-driver-ide PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
+    ${IMGUI_NODE_EDITOR_DIR}
     ${OPENGL_INCLUDE_DIR}
 )
 
