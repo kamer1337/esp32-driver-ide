@@ -6,7 +6,9 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 
 ## ✨ Latest Update: Advanced IDE Features (November 2025)
 
-**🎨 Professional IDE Experience**: Complete IDE features including integrated terminal, board management, device schematics, and advanced syntax highlighting!
+**🎨 Professional IDE Experience**: Complete IDE features including integrated terminal, board management, device schematics, advanced syntax highlighting, and **blueprint node editor**!
+
+**🔷 Blueprint Node Editor**: Visual node-based editor for designing ESP32 hardware connections and component interactions!
 
 **📋 Board Management**: Scan and manage multiple ESP32 boards with detailed information and device pinout diagrams!
 
@@ -15,6 +17,15 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 📖 **[Read the New Features Guide](NEW_FEATURES.md)**
 
 ### Latest Advanced Capabilities (November 2025)
+
+#### Blueprint Node Editor (NEW!)
+- **Visual Design**: Node-based interface for hardware component design
+- **ESP32 Components**: Pre-built nodes for GPIO, I2C, SPI, UART, ADC, DAC, PWM, and more
+- **Pin Visualization**: Color-coded pins showing input/output/bidirectional connections
+- **Interactive Connections**: Click and drag to create connections between component pins
+- **Code Generation**: Automatically generate Arduino/ESP32 code from visual design
+- **Component Library**: LED, Button, Sensor, Motor, Display nodes and more
+- **Context Menu**: Right-click to add new components to your design
 
 #### Integrated Terminal
 - **Command-Line Interface**: Built-in terminal for executing commands
@@ -69,10 +80,11 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 ## ✨ ImGui Interface
 
 The IDE features a complete ImGui-based GUI with:
-- **Five-panel layout**: File/Board Explorer (left), Editor/Debugger/RE (center), Properties/Templates/Completion (right), AI Assistant (far right), Terminal (bottom)
+- **Five-panel layout**: File/Board Explorer (left), Editor/Debugger/RE/Blueprint (center), Properties/Templates/Completion (right), AI Assistant (far right), Terminal (bottom)
 - **Professional toolbar**: USB port selector, Upload, Download, Debug, and Reverse Engineering buttons
-- **Multi-tab panels**: Switch between Files/Boards, Editor/Debugger/RE, Editor/Templates/Completion views
+- **Multi-tab panels**: Switch between Files/Boards, Editor/Debugger/RE/Blueprint, Editor/Templates/Completion views
 - **Dual bottom panels**: Console output and integrated terminal
+- **Blueprint editor**: Visual node-based hardware design with component library
 - **Device schematic viewer**: Floating window with pinout and block diagrams
 - **Dark theme**: Professional appearance optimized for long coding sessions
 

@@ -1,4 +1,5 @@
 #include "gui/imgui_window.h"
+#include "gui/blueprint_editor.h"
 #include "editor/text_editor.h"
 #include "editor/syntax_highlighter.h"
 #include "file_manager/file_manager.h"
@@ -197,6 +198,13 @@ bool ImGuiWindow::Initialize(int width, int height) {
     // Setup style
     SetupImGuiStyle();
     
+    // Initialize blueprint editor
+    blueprint_editor_ = std::make_unique<BlueprintEditor>();
+    if (!blueprint_editor_->Initialize()) {
+        std::cerr << "Failed to initialize Blueprint Editor" << std::endl;
+        // Continue anyway, non-fatal
+    }
+    
     AddConsoleMessage("ESP32 Driver IDE v1.0.0 initialized");
     AddConsoleMessage("ImGui interface ready");
     
@@ -333,6 +341,12 @@ void ImGuiWindow::Run() {
 }
 
 void ImGuiWindow::Shutdown() {
+    // Shutdown blueprint editor
+    if (blueprint_editor_) {
+        blueprint_editor_->Shutdown();
+        blueprint_editor_.reset();
+    }
+    
     if (window_) {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -591,6 +605,12 @@ void ImGuiWindow::RenderCenterPanel() {
         if (ImGui::BeginTabItem("Reverse Engineering")) {
             current_center_tab_ = 2;
             RenderReverseEngineeringTab();
+            ImGui::EndTabItem();
+        }
+        
+        if (ImGui::BeginTabItem("Blueprint")) {
+            current_center_tab_ = 3;
+            RenderBlueprintTab();
             ImGui::EndTabItem();
         }
         
@@ -1936,6 +1956,39 @@ void ImGuiWindow::RenderSyntaxHighlightedText(const std::string& code) {
             ImGui::SameLine(0, 0);
         }
         // If token ends with newline, the next token will naturally start on new line
+    }
+}
+
+void ImGuiWindow::RenderBlueprintTab() {
+    ImGui::Text("Blueprint Node Editor");
+    ImGui::Separator();
+    
+    // Toolbar for blueprint actions
+    if (ImGui::Button("Clear All")) {
+        if (blueprint_editor_) {
+            blueprint_editor_->Clear();
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Generate Code")) {
+        if (blueprint_editor_) {
+            std::string generated_code = blueprint_editor_->GenerateCode();
+            AddConsoleMessage("Generated code from blueprint:");
+            AddConsoleMessage(generated_code);
+        }
+    }
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                      "Right-click in empty space to add nodes");
+    
+    ImGui::Separator();
+    
+    // Render the blueprint editor
+    if (blueprint_editor_) {
+        blueprint_editor_->Render();
+    } else {
+        ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), 
+                          "Blueprint editor failed to initialize");
     }
 }
 
