@@ -16,6 +16,7 @@ class TextEditor;
 class FileManager;
 class ESP32Compiler;
 class SerialMonitor;
+class SyntaxHighlighter;
 
 namespace gui {
 
@@ -43,6 +44,7 @@ public:
     void SetFileManager(FileManager* file_manager);
     void SetCompiler(ESP32Compiler* compiler);
     void SetSerialMonitor(SerialMonitor* serial_monitor);
+    void SetSyntaxHighlighter(SyntaxHighlighter* highlighter);
     
 private:
     // GLFW window
@@ -53,6 +55,7 @@ private:
     FileManager* file_manager_;
     ESP32Compiler* compiler_;
     SerialMonitor* serial_monitor_;
+    SyntaxHighlighter* syntax_highlighter_;
     
     // UI state
     bool show_file_explorer_;
@@ -127,6 +130,30 @@ private:
     bool re_disassembly_performed_;             // Tracks if disassembly has been run
     std::vector<std::string> re_disassembly_data_;  // Disassembled instruction lines
     
+    // Terminal state
+    std::vector<std::string> terminal_history_;     // Command history
+    char terminal_input_buffer_[512];              // Input buffer for terminal
+    bool terminal_scroll_to_bottom_;                // Auto-scroll terminal
+    bool show_terminal_;                            // Show/hide terminal panel
+    
+    // Device/Board information state
+    struct BoardInfo {
+        std::string name;           // Board name (e.g., "ESP32-DevKit")
+        std::string chip;           // Chip type (e.g., "ESP32", "ESP32-S3")
+        std::string port;           // Serial port
+        int flash_size_mb;          // Flash size in MB
+        int ram_size_kb;            // RAM size in KB
+        bool is_connected;          // Connection status
+    };
+    std::vector<BoardInfo> detected_boards_;        // List of detected boards
+    int selected_board_index_;                       // Currently selected board
+    bool show_board_list_;                          // Show/hide board list panel
+    bool show_device_schematic_;                    // Show/hide device schematic
+    int current_schematic_view_;                    // 0=pinout, 1=block diagram
+    
+    // Syntax highlighting state
+    bool enable_syntax_highlighting_;               // Enable/disable syntax highlighting
+    
     // UI rendering methods
     void RenderMainMenuBar();
     void RenderToolbar();
@@ -140,6 +167,9 @@ private:
     void RenderEditorTab();
     void RenderDebuggerTab();
     void RenderReverseEngineeringTab();
+    void RenderTerminalPanel();
+    void RenderBoardListPanel();
+    void RenderDeviceSchematic();
     
     // Helper methods
     void RefreshFileList();
@@ -161,6 +191,9 @@ private:
     void InsertCodeIntoEditor(const std::string& code);
     bool IsValidTabIndex(int index) const;
     bool ContainsCode(const std::string& text) const;
+    void ExecuteTerminalCommand(const std::string& command);
+    void RefreshBoardList();
+    void RenderSyntaxHighlightedText(const std::string& code);
     
     // ImGui setup
     void SetupImGuiStyle();

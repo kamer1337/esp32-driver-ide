@@ -1,5 +1,6 @@
 #include "gui/imgui_window.h"
 #include "editor/text_editor.h"
+#include "editor/syntax_highlighter.h"
 #include "file_manager/file_manager.h"
 #include "compiler/esp32_compiler.h"
 #include "serial/serial_monitor.h"
@@ -70,6 +71,7 @@ ImGuiWindow::ImGuiWindow()
       file_manager_(nullptr),
       compiler_(nullptr),
       serial_monitor_(nullptr),
+      syntax_highlighter_(nullptr),
       show_file_explorer_(true),
       show_properties_panel_(true),
       show_ai_assistant_(true),
@@ -85,11 +87,19 @@ ImGuiWindow::ImGuiWindow()
       line_count_dirty_(true),
       ai_scroll_to_bottom_(false),
       re_analysis_performed_(false),
-      re_disassembly_performed_(false) {
+      re_disassembly_performed_(false),
+      terminal_scroll_to_bottom_(false),
+      show_terminal_(true),
+      selected_board_index_(-1),
+      show_board_list_(true),
+      show_device_schematic_(false),
+      current_schematic_view_(0),
+      enable_syntax_highlighting_(true) {
     
     // Initialize editor buffer with empty content (lazy initialization is better than memset)
     editor_buffer_[0] = '\0';
     ai_input_buffer_[0] = '\0';
+    terminal_input_buffer_[0] = '\0';
     
     // Initialize baud rates
     baud_rates_ = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
@@ -106,6 +116,11 @@ ImGuiWindow::ImGuiWindow()
     re_analysis_result_.functions_detected = 0;
     re_analysis_result_.strings_found = 0;
     re_analysis_result_.has_data = false;
+    
+    // Initialize terminal with welcome message
+    terminal_history_.push_back("ESP32 Driver IDE Terminal v1.0");
+    terminal_history_.push_back("Type 'help' for available commands");
+    terminal_history_.push_back("");
 }
 
 ImGuiWindow::~ImGuiWindow() {
@@ -222,15 +237,29 @@ void ImGuiWindow::Run() {
         
         // Four-column layout (added AI assistant)
         float window_width = ImGui::GetContentRegionAvail().x;
-        float left_panel_width = show_file_explorer_ ? 250.0f : 0.0f;
+        float left_panel_width = (show_file_explorer_ || show_board_list_) ? 250.0f : 0.0f;
         float right_panel_width = show_properties_panel_ ? 250.0f : 0.0f;
         float ai_panel_width = show_ai_assistant_ ? 300.0f : 0.0f;
         float center_panel_width = window_width - left_panel_width - right_panel_width - ai_panel_width;
         
-        // Left panel - File Explorer
-        if (show_file_explorer_) {
-            ImGui::BeginChild("FileExplorer", ImVec2(left_panel_width, 0), true);
-            RenderFileExplorer();
+        // Left panel - File Explorer and Board List
+        if (show_file_explorer_ || show_board_list_) {
+            ImGui::BeginChild("LeftPanel", ImVec2(left_panel_width, 0), true);
+            
+            if (ImGui::BeginTabBar("LeftPanelTabs")) {
+                if (show_file_explorer_ && ImGui::BeginTabItem("Files")) {
+                    RenderFileExplorer();
+                    ImGui::EndTabItem();
+                }
+                
+                if (show_board_list_ && ImGui::BeginTabItem("Boards")) {
+                    RenderBoardListPanel();
+                    ImGui::EndTabItem();
+                }
+                
+                ImGui::EndTabBar();
+            }
+            
             ImGui::EndChild();
             ImGui::SameLine();
         }
@@ -258,12 +287,32 @@ void ImGuiWindow::Run() {
         
         ImGui::End();
         
-        // Console at the bottom
+        // Bottom panels - Console and Terminal
+        float bottom_panel_width = show_terminal_ ? viewport->Size.x / 2.0f : viewport->Size.x;
+        
+        // Console at the bottom left
         ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + viewport->Size.y - 200));
-        ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, 200));
+        ImGui::SetNextWindowSize(ImVec2(bottom_panel_width, 200));
         ImGui::Begin("Console", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
         RenderConsole();
         ImGui::End();
+        
+        // Terminal at the bottom right
+        if (show_terminal_) {
+            ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + bottom_panel_width, viewport->Pos.y + viewport->Size.y - 200));
+            ImGui::SetNextWindowSize(ImVec2(viewport->Size.x - bottom_panel_width, 200));
+            ImGui::Begin("Terminal", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+            RenderTerminalPanel();
+            ImGui::End();
+        }
+        
+        // Device Schematic Window (floating)
+        if (show_device_schematic_) {
+            ImGui::SetNextWindowSize(ImVec2(600, 700), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Device Schematic", &show_device_schematic_);
+            RenderDeviceSchematic();
+            ImGui::End();
+        }
         
         // Rendering
         ImGui::Render();
@@ -320,6 +369,10 @@ void ImGuiWindow::SetCompiler(ESP32Compiler* compiler) {
 void ImGuiWindow::SetSerialMonitor(SerialMonitor* serial_monitor) {
     serial_monitor_ = serial_monitor;
     RefreshPortList();
+}
+
+void ImGuiWindow::SetSyntaxHighlighter(SyntaxHighlighter* highlighter) {
+    syntax_highlighter_ = highlighter;
 }
 
 void ImGuiWindow::RenderMainMenuBar() {
@@ -1402,6 +1455,340 @@ bool ImGuiWindow::ContainsCode(const std::string& text) const {
     return text.find(CODE_MARKER_SETUP) != std::string::npos ||
            text.find(CODE_MARKER_LOOP) != std::string::npos ||
            text.find(CODE_MARKER_INCLUDE) != std::string::npos;
+}
+
+void ImGuiWindow::RenderTerminalPanel() {
+    ImGui::Text("Integrated Terminal");
+    ImGui::Separator();
+    
+    // Terminal output
+    ImGui::BeginChild("TerminalOutput", ImVec2(0, -30), true, ImGuiWindowFlags_HorizontalScrollbar);
+    for (const auto& line : terminal_history_) {
+        // Color code output
+        if (line.find("Error:") != std::string::npos || line.find("error:") != std::string::npos) {
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", line.c_str());
+        } else if (line.find("Warning:") != std::string::npos || line.find("warning:") != std::string::npos) {
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "%s", line.c_str());
+        } else if (line.find("$") == 0 || line.find(">") == 0) {
+            ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "%s", line.c_str());
+        } else {
+            ImGui::Text("%s", line.c_str());
+        }
+    }
+    
+    if (terminal_scroll_to_bottom_) {
+        ImGui::SetScrollHereY(1.0f);
+        terminal_scroll_to_bottom_ = false;
+    }
+    ImGui::EndChild();
+    
+    // Command input
+    ImGui::PushItemWidth(-1);
+    if (ImGui::InputText("##terminal_input", terminal_input_buffer_, sizeof(terminal_input_buffer_), 
+                         ImGuiInputTextFlags_EnterReturnsTrue)) {
+        std::string command(terminal_input_buffer_);
+        if (!command.empty()) {
+            ExecuteTerminalCommand(command);
+            terminal_input_buffer_[0] = '\0';
+            terminal_scroll_to_bottom_ = true;
+        }
+    }
+    ImGui::PopItemWidth();
+}
+
+void ImGuiWindow::ExecuteTerminalCommand(const std::string& command) {
+    terminal_history_.push_back("$ " + command);
+    
+    if (command == "help") {
+        terminal_history_.push_back("Available commands:");
+        terminal_history_.push_back("  help     - Show this help message");
+        terminal_history_.push_back("  clear    - Clear terminal output");
+        terminal_history_.push_back("  compile  - Compile current code");
+        terminal_history_.push_back("  upload   - Upload code to device");
+        terminal_history_.push_back("  ports    - List available serial ports");
+        terminal_history_.push_back("  boards   - List detected boards");
+        terminal_history_.push_back("  ls       - List files in project");
+    } else if (command == "clear") {
+        terminal_history_.clear();
+        terminal_history_.push_back("Terminal cleared");
+    } else if (command == "compile") {
+        terminal_history_.push_back("Compiling code...");
+        CompileCode();
+        terminal_history_.push_back("Compilation complete - check console for details");
+    } else if (command == "upload") {
+        terminal_history_.push_back("Uploading code to device...");
+        UploadCode();
+        terminal_history_.push_back("Upload complete - check console for details");
+    } else if (command == "ports") {
+        terminal_history_.push_back("Available serial ports:");
+        if (available_ports_.empty()) {
+            terminal_history_.push_back("  (none found)");
+        } else {
+            for (const auto& port : available_ports_) {
+                terminal_history_.push_back("  " + port);
+            }
+        }
+    } else if (command == "boards") {
+        terminal_history_.push_back("Detected boards:");
+        if (detected_boards_.empty()) {
+            terminal_history_.push_back("  (none found - run 'ports' to scan)");
+        } else {
+            for (const auto& board : detected_boards_) {
+                terminal_history_.push_back("  " + board.name + " - " + board.chip + " @ " + board.port);
+            }
+        }
+    } else if (command == "ls") {
+        terminal_history_.push_back("Project files:");
+        for (const auto& file : file_list_) {
+            terminal_history_.push_back("  " + file);
+        }
+    } else {
+        terminal_history_.push_back("Error: Unknown command '" + command + "'");
+        terminal_history_.push_back("Type 'help' for available commands");
+    }
+}
+
+void ImGuiWindow::RenderBoardListPanel() {
+    ImGui::Text("Detected Boards");
+    ImGui::Separator();
+    
+    if (ImGui::Button("Scan for Boards")) {
+        RefreshBoardList();
+    }
+    
+    ImGui::SameLine();
+    if (ImGui::Button("Show Schematic")) {
+        show_device_schematic_ = !show_device_schematic_;
+    }
+    
+    ImGui::Separator();
+    
+    if (detected_boards_.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No boards detected");
+        ImGui::TextWrapped("Click 'Scan for Boards' to detect connected ESP32 devices");
+    } else {
+        ImGui::Text("Found %d board(s):", static_cast<int>(detected_boards_.size()));
+        ImGui::Spacing();
+        
+        for (size_t i = 0; i < detected_boards_.size(); i++) {
+            const auto& board = detected_boards_[i];
+            
+            ImGui::PushID(i);
+            bool is_selected = (static_cast<int>(i) == selected_board_index_);
+            
+            if (ImGui::Selectable(board.name.c_str(), is_selected)) {
+                selected_board_index_ = static_cast<int>(i);
+            }
+            
+            if (is_selected) {
+                ImGui::Indent();
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Chip: %s", board.chip.c_str());
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Port: %s", board.port.c_str());
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Flash: %d MB", board.flash_size_mb);
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "RAM: %d KB", board.ram_size_kb);
+                
+                if (board.is_connected) {
+                    ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ Connected");
+                } else {
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Not connected");
+                }
+                ImGui::Unindent();
+            }
+            
+            ImGui::PopID();
+        }
+    }
+}
+
+void ImGuiWindow::RefreshBoardList() {
+    AddConsoleMessage("Scanning for ESP32 boards...");
+    
+    // Clear existing boards
+    detected_boards_.clear();
+    
+    // Scan ports and try to detect board information
+    RefreshPortList();
+    
+    for (const auto& port : available_ports_) {
+        BoardInfo board;
+        board.port = port;
+        board.is_connected = (port == selected_port_ && is_connected_);
+        
+        // Simulate board detection (in real implementation, this would query the device)
+        if (port.find("USB") != std::string::npos || port.find("ttyUSB") != std::string::npos) {
+            board.name = "ESP32-DevKit";
+            board.chip = "ESP32";
+            board.flash_size_mb = 4;
+            board.ram_size_kb = 520;
+        } else if (port.find("ACM") != std::string::npos || port.find("ttyACM") != std::string::npos) {
+            board.name = "ESP32-S3-DevKit";
+            board.chip = "ESP32-S3";
+            board.flash_size_mb = 8;
+            board.ram_size_kb = 512;
+        } else {
+            board.name = "ESP32 Board";
+            board.chip = "ESP32";
+            board.flash_size_mb = 4;
+            board.ram_size_kb = 520;
+        }
+        
+        detected_boards_.push_back(board);
+    }
+    
+    AddConsoleMessage("✓ Found " + std::to_string(detected_boards_.size()) + " board(s)");
+}
+
+void ImGuiWindow::RenderDeviceSchematic() {
+    ImGui::Text("ESP32 Device Schematic");
+    ImGui::Separator();
+    
+    // View selector
+    if (ImGui::BeginTabBar("SchematicTabs")) {
+        if (ImGui::BeginTabItem("Pinout")) {
+            current_schematic_view_ = 0;
+            
+            ImGui::TextWrapped("ESP32 DevKit Pinout Diagram");
+            ImGui::Separator();
+            
+            // Draw a simple text-based pinout (in a real app, this would be an image or vector graphics)
+            ImGui::BeginChild("Pinout", ImVec2(0, 0), true);
+            
+            ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "Left Side:");
+            ImGui::Text("EN          - Enable (Reset)");
+            ImGui::Text("VP (GPIO36) - Analog Input Only");
+            ImGui::Text("VN (GPIO39) - Analog Input Only");
+            ImGui::Text("GPIO34      - Analog Input Only");
+            ImGui::Text("GPIO35      - Analog Input Only");
+            ImGui::Text("GPIO32      - ADC1_CH4, Touch9");
+            ImGui::Text("GPIO33      - ADC1_CH5, Touch8");
+            ImGui::Text("GPIO25      - ADC2_CH8, DAC1");
+            ImGui::Text("GPIO26      - ADC2_CH9, DAC2");
+            ImGui::Text("GPIO27      - ADC2_CH7, Touch7");
+            ImGui::Text("GPIO14      - ADC2_CH6, Touch6");
+            ImGui::Text("GPIO12      - ADC2_CH5, Touch5");
+            ImGui::Spacing();
+            
+            ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "Right Side:");
+            ImGui::Text("GPIO23      - VSPI MOSI");
+            ImGui::Text("GPIO22      - I2C SCL");
+            ImGui::Text("TX (GPIO1)  - UART0 TX");
+            ImGui::Text("RX (GPIO3)  - UART0 RX");
+            ImGui::Text("GPIO21      - I2C SDA");
+            ImGui::Text("GPIO19      - VSPI MISO");
+            ImGui::Text("GPIO18      - VSPI SCK");
+            ImGui::Text("GPIO5       - VSPI CS");
+            ImGui::Text("GPIO17      - UART2 TX");
+            ImGui::Text("GPIO16      - UART2 RX");
+            ImGui::Text("GPIO4       - ADC2_CH0, Touch0");
+            ImGui::Text("GPIO2       - ADC2_CH2, Touch2, LED");
+            ImGui::Text("GPIO15      - ADC2_CH3, Touch3");
+            
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Power Pins:");
+            ImGui::Text("3.3V        - 3.3V Power Output");
+            ImGui::Text("GND         - Ground (multiple pins)");
+            ImGui::Text("VIN         - 5V Power Input");
+            
+            ImGui::EndChild();
+            ImGui::EndTabItem();
+        }
+        
+        if (ImGui::BeginTabItem("Block Diagram")) {
+            current_schematic_view_ = 1;
+            
+            ImGui::TextWrapped("ESP32 System Architecture");
+            ImGui::Separator();
+            
+            ImGui::BeginChild("BlockDiagram", ImVec2(0, 0), true);
+            
+            ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "CPU:");
+            ImGui::BulletText("Dual-core Xtensa LX6 @ 240 MHz");
+            ImGui::BulletText("448 KB ROM");
+            ImGui::BulletText("520 KB SRAM");
+            ImGui::Spacing();
+            
+            ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "Wireless:");
+            ImGui::BulletText("WiFi 802.11 b/g/n (2.4 GHz)");
+            ImGui::BulletText("Bluetooth v4.2 BR/EDR + BLE");
+            ImGui::Spacing();
+            
+            ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "Peripherals:");
+            ImGui::BulletText("34 GPIO pins");
+            ImGui::BulletText("18 ADC channels (12-bit)");
+            ImGui::BulletText("2 DAC channels (8-bit)");
+            ImGui::BulletText("10 Touch sensors");
+            ImGui::BulletText("3 UART interfaces");
+            ImGui::BulletText("3 SPI interfaces");
+            ImGui::BulletText("2 I2C interfaces");
+            ImGui::BulletText("16 PWM channels");
+            ImGui::BulletText("SD/SDIO/MMC host");
+            ImGui::BulletText("Ethernet MAC");
+            ImGui::Spacing();
+            
+            ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "Security:");
+            ImGui::BulletText("Secure boot");
+            ImGui::BulletText("Flash encryption");
+            ImGui::BulletText("Hardware crypto acceleration");
+            
+            ImGui::EndChild();
+            ImGui::EndTabItem();
+        }
+        
+        ImGui::EndTabBar();
+    }
+}
+
+void ImGuiWindow::RenderSyntaxHighlightedText(const std::string& code) {
+    if (!enable_syntax_highlighting_ || !syntax_highlighter_) {
+        // Fallback to plain text
+        ImGui::TextUnformatted(code.c_str());
+        return;
+    }
+    
+    // Tokenize and render with colors
+    auto tokens = syntax_highlighter_->Tokenize(code);
+    
+    for (const auto& token : tokens) {
+        ImVec4 color(1.0f, 1.0f, 1.0f, 1.0f); // Default white
+        
+        switch (token.type) {
+            case SyntaxHighlighter::TokenType::KEYWORD:
+                color = ImVec4(0.8f, 0.3f, 0.8f, 1.0f); // Purple
+                break;
+            case SyntaxHighlighter::TokenType::TYPE:
+                color = ImVec4(0.3f, 0.8f, 0.8f, 1.0f); // Cyan
+                break;
+            case SyntaxHighlighter::TokenType::FUNCTION:
+                color = ImVec4(0.8f, 0.8f, 0.3f, 1.0f); // Yellow
+                break;
+            case SyntaxHighlighter::TokenType::STRING:
+                color = ImVec4(0.8f, 0.5f, 0.3f, 1.0f); // Orange
+                break;
+            case SyntaxHighlighter::TokenType::COMMENT:
+                color = ImVec4(0.4f, 0.8f, 0.4f, 1.0f); // Green
+                break;
+            case SyntaxHighlighter::TokenType::NUMBER:
+                color = ImVec4(0.5f, 0.8f, 1.0f, 1.0f); // Light blue
+                break;
+            case SyntaxHighlighter::TokenType::PREPROCESSOR:
+                color = ImVec4(0.8f, 0.4f, 0.4f, 1.0f); // Red
+                break;
+            case SyntaxHighlighter::TokenType::OPERATOR:
+            case SyntaxHighlighter::TokenType::IDENTIFIER:
+            case SyntaxHighlighter::TokenType::WHITESPACE:
+            default:
+                color = ImVec4(0.9f, 0.9f, 0.9f, 1.0f); // Light gray
+                break;
+        }
+        
+        ImGui::TextColored(color, "%s", token.text.c_str());
+        
+        // Don't add newline after each token - let text flow naturally
+        if (token.text.find('\n') == std::string::npos) {
+            ImGui::SameLine(0, 0);
+        }
+    }
 }
 
 } // namespace gui
