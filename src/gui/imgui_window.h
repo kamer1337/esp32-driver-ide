@@ -113,6 +113,20 @@ private:
     static constexpr const char* CODE_MARKER_LOOP = "void loop()";
     static constexpr const char* CODE_MARKER_INCLUDE = "#include";
     
+    // Reverse Engineering state
+    struct REAnalysisResult {
+        std::string architecture;
+        std::string flash_size;
+        std::string entry_point;
+        int functions_detected;
+        int strings_found;
+        bool has_data;
+    };
+    REAnalysisResult re_analysis_result_;
+    bool re_analysis_performed_;
+    bool re_disassembly_performed_;
+    std::vector<std::string> re_disassembly_data_;
+    
     // UI rendering methods
     void RenderMainMenuBar();
     void RenderToolbar();
