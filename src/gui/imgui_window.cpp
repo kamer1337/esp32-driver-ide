@@ -39,6 +39,27 @@ static const char* SIMPLE_SKETCH_TEMPLATE =
     "\n"
     "}\n";
 
+// Sample disassembly data for ESP32 (Xtensa LX6 instructions)
+static const std::vector<std::string> SAMPLE_DISASSEMBLY_DATA = {
+    "0x40080000: entry a1, 64",
+    "0x40080003: s32i.n a0, a1, 0",
+    "0x40080005: call0 app_main",
+    "0x40080008: retw.n",
+    "0x4008000a: l32r a2, 0x40080100",
+    "0x4008000d: l32i a3, a2, 0",
+    "0x40080010: addi a3, a3, 1",
+    "0x40080013: s32i a3, a2, 0",
+    "0x40080016: movi a2, 0x100",
+    "0x40080019: call0 vTaskDelay"
+};
+
+// Sample RE analysis result constants
+static constexpr const char* SAMPLE_RE_ARCHITECTURE = "Xtensa LX6";
+static constexpr const char* SAMPLE_RE_FLASH_SIZE = "4MB";
+static constexpr const char* SAMPLE_RE_ENTRY_POINT = "0x40080000";
+static constexpr int SAMPLE_RE_FUNCTIONS_DETECTED = 42;
+static constexpr int SAMPLE_RE_STRINGS_FOUND = 127;
+
 static void glfw_error_callback(int error, const char* description) {
     std::cerr << "GLFW Error " << error << ": " << description << std::endl;
 }
@@ -734,17 +755,7 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
         
         // Populate disassembly data with sample ESP32 Xtensa instructions
         // In a real implementation, this would read from the actual device flash
-        re_disassembly_data_.clear();
-        re_disassembly_data_.push_back("0x40080000: entry a1, 64");
-        re_disassembly_data_.push_back("0x40080003: s32i.n a0, a1, 0");
-        re_disassembly_data_.push_back("0x40080005: call0 app_main");
-        re_disassembly_data_.push_back("0x40080008: retw.n");
-        re_disassembly_data_.push_back("0x4008000a: l32r a2, 0x40080100");
-        re_disassembly_data_.push_back("0x4008000d: l32i a3, a2, 0");
-        re_disassembly_data_.push_back("0x40080010: addi a3, a3, 1");
-        re_disassembly_data_.push_back("0x40080013: s32i a3, a2, 0");
-        re_disassembly_data_.push_back("0x40080016: movi a2, 0x100");
-        re_disassembly_data_.push_back("0x40080019: call0 vTaskDelay");
+        re_disassembly_data_ = SAMPLE_DISASSEMBLY_DATA;
         
         re_disassembly_performed_ = true;
         AddConsoleMessage("✓ Disassembly complete - " + std::to_string(re_disassembly_data_.size()) + " instructions decoded");
@@ -1039,11 +1050,12 @@ void ImGuiWindow::ReverseEngineerCode() {
     AddConsoleMessage("Extracting strings and constants...");
     
     // Populate analysis results with simulated data
-    re_analysis_result_.architecture = "Xtensa LX6";
-    re_analysis_result_.flash_size = "4MB";
-    re_analysis_result_.entry_point = "0x40080000";
-    re_analysis_result_.functions_detected = 42;
-    re_analysis_result_.strings_found = 127;
+    // In a real implementation, this would analyze the actual device firmware
+    re_analysis_result_.architecture = SAMPLE_RE_ARCHITECTURE;
+    re_analysis_result_.flash_size = SAMPLE_RE_FLASH_SIZE;
+    re_analysis_result_.entry_point = SAMPLE_RE_ENTRY_POINT;
+    re_analysis_result_.functions_detected = SAMPLE_RE_FUNCTIONS_DETECTED;
+    re_analysis_result_.strings_found = SAMPLE_RE_STRINGS_FOUND;
     re_analysis_result_.has_data = true;
     re_analysis_performed_ = true;
     
