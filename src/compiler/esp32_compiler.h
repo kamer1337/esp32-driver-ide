@@ -58,6 +58,18 @@ public:
     bool CheckSyntax(const std::string& code);
     std::vector<std::string> GetSyntaxErrors(const std::string& code);
     
+    // Performance analysis
+    struct PerformanceMetrics {
+        size_t code_lines;
+        size_t estimated_ram_usage;
+        size_t estimated_flash_usage;
+        std::vector<std::string> warnings;
+        std::vector<std::string> optimization_suggestions;
+        int performance_score; // 0-100
+    };
+    
+    PerformanceMetrics AnalyzePerformance(const std::string& code);
+    
 private:
     BoardType current_board_;
     OutputCallback output_callback_;

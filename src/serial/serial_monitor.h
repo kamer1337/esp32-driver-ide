@@ -62,6 +62,35 @@ public:
     std::vector<std::string> GetRealtimeData() const;
     void ClearRealtimeData();
     
+    // Memory profiling
+    struct MemoryProfile {
+        size_t free_heap;
+        size_t total_heap;
+        size_t free_psram;
+        size_t largest_free_block;
+        float fragmentation_percent;
+        std::vector<std::string> warnings;
+    };
+    
+    MemoryProfile GetMemoryProfile() const;
+    void StartMemoryProfiling();
+    void StopMemoryProfiling();
+    bool IsMemoryProfiling() const;
+    std::vector<MemoryProfile> GetMemoryHistory() const;
+    
+    // Variable watching for debugging
+    struct WatchVariable {
+        std::string name;
+        std::string value;
+        std::string type;
+        long long last_update;
+    };
+    
+    void AddWatchVariable(const std::string& name, const std::string& type);
+    void RemoveWatchVariable(const std::string& name);
+    std::vector<WatchVariable> GetWatchVariables() const;
+    void UpdateWatchVariable(const std::string& name, const std::string& value);
+    
 private:
     bool connected_;
     std::string current_port_;
@@ -70,9 +99,13 @@ private:
     MessageCallback message_callback_;
     bool realtime_reading_;
     std::vector<std::string> realtime_data_;
+    bool memory_profiling_;
+    std::vector<MemoryProfile> memory_history_;
+    std::vector<WatchVariable> watch_variables_;
     
     void NotifyMessage(const SerialMessage& message);
     void SimulateDataReading();
+    void SimulateMemoryProfiling();
 };
 
 } // namespace esp32_ide

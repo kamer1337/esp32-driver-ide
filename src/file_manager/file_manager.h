@@ -55,12 +55,33 @@ public:
     // Default sketch
     static std::string GetDefaultSketch();
     
+    // Custom code templates
+    struct CodeTemplate {
+        std::string name;
+        std::string description;
+        std::string code;
+        std::vector<std::string> tags;
+    };
+    
+    void AddTemplate(const std::string& name, const std::string& code, 
+                     const std::string& description = "", 
+                     const std::vector<std::string>& tags = {});
+    bool DeleteTemplate(const std::string& name);
+    std::vector<CodeTemplate> GetTemplates() const;
+    std::vector<CodeTemplate> GetTemplatesByTag(const std::string& tag) const;
+    CodeTemplate GetTemplate(const std::string& name) const;
+    bool TemplateExists(const std::string& name) const;
+    std::string ApplyTemplate(const std::string& template_name, 
+                             const std::map<std::string, std::string>& variables = {});
+    
 private:
     std::map<std::string, FileInfo> files_;
     std::string current_file_;
     std::string project_path_;
+    std::map<std::string, CodeTemplate> templates_;
     
     void MarkAsModified(const std::string& name, bool modified = true);
+    void InitializeDefaultTemplates();
 };
 
 } // namespace esp32_ide

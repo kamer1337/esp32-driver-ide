@@ -4,7 +4,8 @@
 namespace esp32_ide {
 
 SerialMonitor::SerialMonitor() 
-    : connected_(false), current_port_(""), baud_rate_(115200), realtime_reading_(false) {}
+    : connected_(false), current_port_(""), baud_rate_(115200), 
+      realtime_reading_(false), memory_profiling_(false) {}
 
 SerialMonitor::~SerialMonitor() {
     Disconnect();
@@ -167,6 +168,120 @@ void SerialMonitor::SimulateDataReading() {
 void SerialMonitor::NotifyMessage(const SerialMessage& message) {
     if (message_callback_) {
         message_callback_(message);
+    }
+}
+
+// Memory profiling implementation
+SerialMonitor::MemoryProfile SerialMonitor::GetMemoryProfile() const {
+    MemoryProfile profile;
+    
+    // Simulate memory profile data
+    profile.total_heap = 327680; // ESP32 typical heap size
+    profile.free_heap = 280000;
+    profile.free_psram = 0;
+    profile.largest_free_block = 110000;
+    
+    // Calculate fragmentation: (free_heap - largest_free_block) / free_heap * 100
+    // This represents the percentage of free memory that is fragmented
+    if (profile.free_heap > 0) {
+        profile.fragmentation_percent = ((profile.free_heap - profile.largest_free_block) * 100.0f) / profile.free_heap;
+    } else {
+        profile.fragmentation_percent = 0.0f;
+    }
+    
+    // Generate warnings based on memory state
+    if (profile.free_heap < 20000) {
+        profile.warnings.push_back("CRITICAL: Low free heap (<20KB)");
+    } else if (profile.free_heap < 50000) {
+        profile.warnings.push_back("WARNING: Free heap getting low (<50KB)");
+    }
+    
+    if (profile.fragmentation_percent > 30.0f) {
+        profile.warnings.push_back("High memory fragmentation detected");
+    }
+    
+    return profile;
+}
+
+void SerialMonitor::StartMemoryProfiling() {
+    memory_profiling_ = true;
+    memory_history_.clear();
+    SimulateMemoryProfiling();
+}
+
+void SerialMonitor::StopMemoryProfiling() {
+    memory_profiling_ = false;
+}
+
+bool SerialMonitor::IsMemoryProfiling() const {
+    return memory_profiling_;
+}
+
+std::vector<SerialMonitor::MemoryProfile> SerialMonitor::GetMemoryHistory() const {
+    return memory_history_;
+}
+
+void SerialMonitor::SimulateMemoryProfiling() {
+    if (!memory_profiling_) {
+        return;
+    }
+    
+    // Simulate memory snapshots at different points
+    for (int i = 0; i < 5; i++) {
+        MemoryProfile profile;
+        profile.total_heap = 327680;
+        profile.free_heap = 280000 - (i * 10000); // Simulate decreasing free heap
+        profile.free_psram = 0;
+        profile.largest_free_block = 110000 - (i * 5000);
+        
+        // Calculate fragmentation correctly
+        if (profile.free_heap > 0) {
+            profile.fragmentation_percent = ((profile.free_heap - profile.largest_free_block) * 100.0f) / profile.free_heap;
+        } else {
+            profile.fragmentation_percent = 0.0f;
+        }
+        
+        if (profile.free_heap < 20000) {
+            profile.warnings.push_back("CRITICAL: Low free heap");
+        }
+        
+        memory_history_.push_back(profile);
+    }
+}
+
+// Variable watching implementation
+void SerialMonitor::AddWatchVariable(const std::string& name, const std::string& type) {
+    WatchVariable var;
+    var.name = name;
+    var.type = type;
+    var.value = "N/A";
+    var.last_update = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
+    watch_variables_.push_back(var);
+}
+
+void SerialMonitor::RemoveWatchVariable(const std::string& name) {
+    watch_variables_.erase(
+        std::remove_if(watch_variables_.begin(), watch_variables_.end(),
+                      [&name](const WatchVariable& var) { return var.name == name; }),
+        watch_variables_.end()
+    );
+}
+
+std::vector<SerialMonitor::WatchVariable> SerialMonitor::GetWatchVariables() const {
+    return watch_variables_;
+}
+
+void SerialMonitor::UpdateWatchVariable(const std::string& name, const std::string& value) {
+    for (auto& var : watch_variables_) {
+        if (var.name == name) {
+            var.value = value;
+            var.last_update = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count();
+            break;
+        }
     }
 }
 

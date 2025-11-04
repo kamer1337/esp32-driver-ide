@@ -190,4 +190,106 @@ bool ESP32Compiler::CheckRequiredFunctions(const std::string& code) {
            code.find("void loop()") != std::string::npos;
 }
 
+// Performance analysis implementation
+ESP32Compiler::PerformanceMetrics ESP32Compiler::AnalyzePerformance(const std::string& code) {
+    PerformanceMetrics metrics;
+    metrics.performance_score = 100;
+    
+    // Count lines of code
+    metrics.code_lines = std::count(code.begin(), code.end(), '\n') + 1;
+    
+    // Memory estimation constants
+    constexpr size_t BASE_RAM_USAGE = 4096;      // Base RAM overhead
+    constexpr size_t STRING_OBJECT_SIZE = 32;     // Approximate size per String object
+    constexpr size_t COMPILED_SIZE_MULTIPLIER = 4; // Approximate compiled size factor
+    
+    // Estimate RAM usage
+    size_t string_count = 0;
+    size_t pos = 0;
+    while ((pos = code.find("String ", pos)) != std::string::npos) {
+        string_count++;
+        pos++;
+    }
+    metrics.estimated_ram_usage = BASE_RAM_USAGE + (string_count * STRING_OBJECT_SIZE);
+    
+    // Estimate flash usage (rough approximation)
+    metrics.estimated_flash_usage = code.size() * COMPILED_SIZE_MULTIPLIER;
+    
+    // Check for performance issues
+    
+    // Check for blocking delays in loop
+    if (code.find("void loop()") != std::string::npos && code.find("delay(") != std::string::npos) {
+        metrics.warnings.push_back("Blocking delay() calls detected in loop()");
+        metrics.optimization_suggestions.push_back("Consider using millis() for non-blocking timing");
+        metrics.performance_score -= 10;
+    }
+    
+    // Check for String usage (memory intensive)
+    if (string_count > 0) {
+        metrics.warnings.push_back("String objects detected - may cause memory fragmentation");
+        metrics.optimization_suggestions.push_back("Consider using char arrays for better memory management");
+        metrics.performance_score -= 5 * string_count;
+    }
+    
+    // Check for Serial.print in loops
+    size_t loop_pos = code.find("for(");
+    if (loop_pos != std::string::npos) {
+        size_t loop_end = code.find("}", loop_pos);
+        if (loop_end != std::string::npos) {
+            std::string loop_body = code.substr(loop_pos, loop_end - loop_pos);
+            if (loop_body.find("Serial.print") != std::string::npos) {
+                metrics.warnings.push_back("Serial.print() calls inside loops may slow execution");
+                metrics.optimization_suggestions.push_back("Minimize Serial output in tight loops");
+                metrics.performance_score -= 15;
+            }
+        }
+    }
+    
+    // Check for inefficient analogRead usage
+    size_t analog_read_count = 0;
+    pos = 0;
+    while ((pos = code.find("analogRead(", pos)) != std::string::npos) {
+        analog_read_count++;
+        pos++;
+    }
+    if (analog_read_count > 5) {
+        metrics.warnings.push_back("Multiple analogRead() calls detected");
+        metrics.optimization_suggestions.push_back("Cache analog readings if reading same pin multiple times");
+        metrics.performance_score -= 5;
+    }
+    
+    // Check for delay in interrupts
+    if (code.find("IRAM_ATTR") != std::string::npos || code.find("ISR") != std::string::npos) {
+        if (code.find("delay(") != std::string::npos) {
+            metrics.warnings.push_back("CRITICAL: delay() in interrupt service routine");
+            metrics.optimization_suggestions.push_back("Remove all blocking calls from ISRs");
+            metrics.performance_score -= 30;
+        }
+    }
+    
+    // Check WiFi without proper connection handling
+    if (code.find("WiFi.") != std::string::npos) {
+        if (code.find("while (WiFi.status()") == std::string::npos && 
+            code.find("if (WiFi.status()") == std::string::npos) {
+            metrics.warnings.push_back("WiFi operations without status checking");
+            metrics.optimization_suggestions.push_back("Always check WiFi.status() before using WiFi");
+            metrics.performance_score -= 10;
+        }
+    }
+    
+    // Memory warnings
+    if (metrics.estimated_ram_usage > 200000) {
+        metrics.warnings.push_back("High estimated RAM usage - may cause crashes");
+        metrics.optimization_suggestions.push_back("Review data structures and reduce memory footprint");
+        metrics.performance_score -= 20;
+    }
+    
+    // Ensure score doesn't go below 0
+    if (metrics.performance_score < 0) {
+        metrics.performance_score = 0;
+    }
+    
+    return metrics;
+}
+
 } // namespace esp32_ide
