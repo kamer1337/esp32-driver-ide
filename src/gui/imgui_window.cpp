@@ -678,7 +678,7 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
     ImGui::Text("Reverse Engineering Tools");
     ImGui::Separator();
     
-    // Show available devices section
+    // Display available devices list - helps users see all detected devices at a glance
     ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "Available Devices:");
     ImGui::Spacing();
     
@@ -732,7 +732,8 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
         AddConsoleMessage("Parsing instruction set...");
         AddConsoleMessage("Identifying function boundaries...");
         
-        // Populate disassembly data
+        // Populate disassembly data with sample ESP32 Xtensa instructions
+        // In a real implementation, this would read from the actual device flash
         re_disassembly_data_.clear();
         re_disassembly_data_.push_back("0x40080000: entry a1, 64");
         re_disassembly_data_.push_back("0x40080003: s32i.n a0, a1, 0");
@@ -754,6 +755,7 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
     
     ImGui::BeginChild("REResults", ImVec2(0, 0), true);
     
+    // Display analysis results if available, otherwise show prompt
     if (re_analysis_performed_ && re_analysis_result_.has_data) {
         ImGui::TextWrapped("ESP32 Firmware Analysis:");
         ImGui::BulletText("Architecture: %s", re_analysis_result_.architecture.c_str());
@@ -762,6 +764,7 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
         ImGui::BulletText("Functions detected: %d", re_analysis_result_.functions_detected);
         ImGui::BulletText("Strings found: %d", re_analysis_result_.strings_found);
         
+        // Show disassembly if it has been performed
         if (re_disassembly_performed_ && !re_disassembly_data_.empty()) {
             ImGui::Spacing();
             ImGui::Separator();
