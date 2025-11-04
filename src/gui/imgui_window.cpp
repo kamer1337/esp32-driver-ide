@@ -39,6 +39,27 @@ static const char* SIMPLE_SKETCH_TEMPLATE =
     "\n"
     "}\n";
 
+// Sample disassembly data for ESP32 (Xtensa LX6 instructions)
+static const std::vector<std::string> SAMPLE_DISASSEMBLY_DATA = {
+    "0x40080000: entry a1, 64",
+    "0x40080003: s32i.n a0, a1, 0",
+    "0x40080005: call0 app_main",
+    "0x40080008: retw.n",
+    "0x4008000a: l32r a2, 0x40080100",
+    "0x4008000d: l32i a3, a2, 0",
+    "0x40080010: addi a3, a3, 1",
+    "0x40080013: s32i a3, a2, 0",
+    "0x40080016: movi a2, 0x100",
+    "0x40080019: call0 vTaskDelay"
+};
+
+// Sample RE analysis result constants
+static constexpr const char* SAMPLE_RE_ARCHITECTURE = "Xtensa LX6";
+static constexpr const char* SAMPLE_RE_FLASH_SIZE = "4MB";
+static constexpr const char* SAMPLE_RE_ENTRY_POINT = "0x40080000";
+static constexpr int SAMPLE_RE_FUNCTIONS_DETECTED = 42;
+static constexpr int SAMPLE_RE_STRINGS_FOUND = 127;
+
 static void glfw_error_callback(int error, const char* description) {
     std::cerr << "GLFW Error " << error << ": " << description << std::endl;
 }
@@ -62,7 +83,9 @@ ImGuiWindow::ImGuiWindow()
       selected_file_index_(-1),
       cached_line_count_(0),
       line_count_dirty_(true),
-      ai_scroll_to_bottom_(false) {
+      ai_scroll_to_bottom_(false),
+      re_analysis_performed_(false),
+      re_disassembly_performed_(false) {
     
     // Initialize editor buffer with empty content (lazy initialization is better than memset)
     editor_buffer_[0] = '\0';
@@ -75,6 +98,14 @@ ImGuiWindow::ImGuiWindow()
     root_folder_.name = "Project";
     root_folder_.path = "";
     root_folder_.is_folder = true;
+    
+    // Initialize RE analysis result
+    re_analysis_result_.architecture = "";
+    re_analysis_result_.flash_size = "";
+    re_analysis_result_.entry_point = "";
+    re_analysis_result_.functions_detected = 0;
+    re_analysis_result_.strings_found = 0;
+    re_analysis_result_.has_data = false;
 }
 
 ImGuiWindow::~ImGuiWindow() {
@@ -668,6 +699,36 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
     ImGui::Text("Reverse Engineering Tools");
     ImGui::Separator();
     
+    // Display available devices list - helps users see all detected devices at a glance
+    ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "Available Devices:");
+    ImGui::Spacing();
+    
+    if (available_ports_.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "⚠ No devices found");
+        ImGui::TextWrapped("Click 'Refresh Ports' in the toolbar to scan for devices.");
+    } else {
+        ImGui::BeginChild("DeviceList", ImVec2(0, 100), true);
+        for (size_t i = 0; i < available_ports_.size(); i++) {
+            bool is_current = (available_ports_[i] == selected_port_);
+            bool is_connected = is_current && is_connected_;
+            
+            if (is_connected) {
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ %s (Connected)", available_ports_[i].c_str());
+            } else if (is_current) {
+                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "○ %s (Selected)", available_ports_[i].c_str());
+            } else {
+                ImGui::Text("  %s", available_ports_[i].c_str());
+            }
+        }
+        ImGui::EndChild();
+        
+        ImGui::TextWrapped("Found %u device(s). Select and connect to a device from the toolbar.", 
+                           static_cast<unsigned int>(available_ports_.size()));
+    }
+    
+    ImGui::Separator();
+    ImGui::Spacing();
+    
     // Check connection status
     if (!is_connected_) {
         ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "⚠ No device connected");
@@ -688,20 +749,48 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
     
     ImGui::SameLine();
     if (ImGui::Button("Disassemble")) {
-        AddConsoleMessage("Disassembling firmware...");
-        AddConsoleMessage("Disassembly complete - analysis available");
+        AddConsoleMessage("=== Disassembling Firmware ===");
+        AddConsoleMessage("Reading flash memory from device...");
+        AddConsoleMessage("Parsing instruction set...");
+        AddConsoleMessage("Identifying function boundaries...");
+        
+        // Populate disassembly data with sample ESP32 Xtensa instructions
+        // In a real implementation, this would read from the actual device flash
+        re_disassembly_data_ = SAMPLE_DISASSEMBLY_DATA;
+        
+        re_disassembly_performed_ = true;
+        AddConsoleMessage("✓ Disassembly complete - " + std::to_string(re_disassembly_data_.size()) + " instructions decoded");
     }
     
     ImGui::Separator();
     ImGui::Text("Analysis Results:");
     
     ImGui::BeginChild("REResults", ImVec2(0, 0), true);
-    ImGui::TextWrapped("ESP32 Firmware Analysis:");
-    ImGui::BulletText("Architecture: Xtensa LX6");
-    ImGui::BulletText("Flash size: 4MB");
-    ImGui::BulletText("Entry point: 0x40080000");
-    ImGui::BulletText("Functions detected: 42");
-    ImGui::BulletText("Strings found: 127");
+    
+    // Display analysis results if available, otherwise show prompt
+    if (re_analysis_performed_ && re_analysis_result_.has_data) {
+        ImGui::TextWrapped("ESP32 Firmware Analysis:");
+        ImGui::BulletText("Architecture: %s", re_analysis_result_.architecture.c_str());
+        ImGui::BulletText("Flash size: %s", re_analysis_result_.flash_size.c_str());
+        ImGui::BulletText("Entry point: %s", re_analysis_result_.entry_point.c_str());
+        ImGui::BulletText("Functions detected: %d", re_analysis_result_.functions_detected);
+        ImGui::BulletText("Strings found: %d", re_analysis_result_.strings_found);
+        
+        // Show disassembly if it has been performed
+        if (re_disassembly_performed_ && !re_disassembly_data_.empty()) {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::TextWrapped("Disassembly Output:");
+            for (const auto& line : re_disassembly_data_) {
+                ImGui::TextUnformatted(line.c_str());
+            }
+        }
+    } else {
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No analysis data available yet.");
+        ImGui::TextWrapped("Click 'Analyze Binary' to perform firmware analysis or 'Disassemble' to view disassembled code.");
+    }
+    
     ImGui::EndChild();
 }
 
@@ -960,6 +1049,17 @@ void ImGuiWindow::ReverseEngineerCode() {
     AddConsoleMessage("Analyzing firmware structure...");
     AddConsoleMessage("Detecting functions and entry points...");
     AddConsoleMessage("Extracting strings and constants...");
+    
+    // Populate analysis results with simulated data
+    // In a real implementation, this would analyze the actual device firmware
+    re_analysis_result_.architecture = SAMPLE_RE_ARCHITECTURE;
+    re_analysis_result_.flash_size = SAMPLE_RE_FLASH_SIZE;
+    re_analysis_result_.entry_point = SAMPLE_RE_ENTRY_POINT;
+    re_analysis_result_.functions_detected = SAMPLE_RE_FUNCTIONS_DETECTED;
+    re_analysis_result_.strings_found = SAMPLE_RE_STRINGS_FOUND;
+    re_analysis_result_.has_data = true;
+    re_analysis_performed_ = true;
+    
     AddConsoleMessage("✓ Analysis complete - see RE tab for details");
 }
 

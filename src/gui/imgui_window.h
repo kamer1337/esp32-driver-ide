@@ -113,6 +113,20 @@ private:
     static constexpr const char* CODE_MARKER_LOOP = "void loop()";
     static constexpr const char* CODE_MARKER_INCLUDE = "#include";
     
+    // Reverse Engineering state
+    struct REAnalysisResult {
+        std::string architecture;    // CPU architecture detected (e.g., "Xtensa LX6")
+        std::string flash_size;       // Flash memory size (e.g., "4MB")
+        std::string entry_point;      // Entry point address (e.g., "0x40080000")
+        int functions_detected;       // Number of functions found during analysis
+        int strings_found;            // Number of strings extracted from firmware
+        bool has_data;                // Whether valid analysis data is available
+    };
+    REAnalysisResult re_analysis_result_;      // Stores analysis results for display
+    bool re_analysis_performed_;                // Tracks if analysis has been run
+    bool re_disassembly_performed_;             // Tracks if disassembly has been run
+    std::vector<std::string> re_disassembly_data_;  // Disassembled instruction lines
+    
     // UI rendering methods
     void RenderMainMenuBar();
     void RenderToolbar();
