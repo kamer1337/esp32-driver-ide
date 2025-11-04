@@ -722,7 +722,8 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
         }
         ImGui::EndChild();
         
-        ImGui::TextWrapped("Found %zu device(s). Select and connect to a device from the toolbar.", available_ports_.size());
+        ImGui::TextWrapped("Found %u device(s). Select and connect to a device from the toolbar.", 
+                           static_cast<unsigned int>(available_ports_.size()));
     }
     
     ImGui::Separator();
