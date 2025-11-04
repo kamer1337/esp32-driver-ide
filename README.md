@@ -4,15 +4,49 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 
 ![ESP32 Driver IDE](https://github.com/user-attachments/assets/18511046-9c87-48ff-a377-960e97afd9f3)
 
-## ✨ Latest Update: Advanced AI Features & Professional Debugging
+## ✨ Latest Update: Advanced IDE Features (November 2025)
 
-**🤖 AI-Powered Development Suite**: Complete AI-powered code refactoring, automatic bug detection, and intelligent code completion!
+**🎨 Professional IDE Experience**: Complete IDE features including integrated terminal, board management, device schematics, and advanced syntax highlighting!
 
-**🔍 Professional Debugging Tools**: Breakpoint debugging, variable watch expressions, memory profiling, and performance analysis!
+**📋 Board Management**: Scan and manage multiple ESP32 boards with detailed information and device pinout diagrams!
 
-📖 **[Read the AI Code Generation Guide](AI_CODE_GENERATION.md)**
+**🎨 Syntax Highlighting**: Beautiful color-coded syntax highlighting with split-view editor!
 
-### New Advanced Capabilities
+📖 **[Read the New Features Guide](NEW_FEATURES.md)**
+
+### Latest Advanced Capabilities (November 2025)
+
+#### Integrated Terminal
+- **Command-Line Interface**: Built-in terminal for executing commands
+- **Color-Coded Output**: Error, warning, and success message highlighting
+- **Built-in Commands**: compile, upload, ports, boards, ls, help, and more
+- **Command History**: Track all executed commands
+
+#### Board Management
+- **Device Detection**: Automatically scan for connected ESP32 boards
+- **Board Information**: View chip type, flash size, RAM, and port details
+- **Multi-Board Support**: Manage multiple boards simultaneously
+- **Connection Status**: Visual indicators for connected devices
+
+#### Device Schematic Viewer
+- **Pinout Diagram**: Complete ESP32 GPIO pinout with alternate functions
+- **Block Diagram**: System architecture overview
+- **Floating Window**: Convenient reference while coding
+- **Multiple Views**: Switch between pinout and architecture views
+
+#### Advanced Syntax Highlighting
+- **Split-View Editor**: Edit mode with live preview
+- **Color-Coded Syntax**: Keywords, types, functions, strings, comments
+- **Real-Time Preview**: See highlighted code as you type
+- **Toggle On/Off**: Switch between plain and highlighted modes
+
+#### Enhanced UI Panels
+- **Templates Panel**: Browse and insert code templates
+- **Completion Panel**: One-click function insertion
+- **Board List Panel**: Manage connected devices
+- **Dual Bottom Panels**: Console and Terminal side-by-side
+
+### Previous Advanced Capabilities
 
 #### AI-Powered Features
 - **Code Refactoring**: Automatic code optimization and readability improvements
@@ -35,10 +69,11 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 ## ✨ ImGui Interface
 
 The IDE features a complete ImGui-based GUI with:
-- **Four-panel layout**: File Explorer (left), Editor/Debugger/RE (center), Properties (right), AI Assistant (far right)
+- **Five-panel layout**: File/Board Explorer (left), Editor/Debugger/RE (center), Properties/Templates/Completion (right), AI Assistant (far right), Terminal (bottom)
 - **Professional toolbar**: USB port selector, Upload, Download, Debug, and Reverse Engineering buttons
-- **Multi-tab center panel**: Switch between Editor, Debugger, and Reverse Engineering views
-- **Real-time console**: See compilation, upload, and debug output
+- **Multi-tab panels**: Switch between Files/Boards, Editor/Debugger/RE, Editor/Templates/Completion views
+- **Dual bottom panels**: Console output and integrated terminal
+- **Device schematic viewer**: Floating window with pinout and block diagrams
 - **Dark theme**: Professional appearance optimized for long coding sessions
 
 📖 **[Read the complete ImGui Interface Guide](IMGUI_GUIDE.md)**
