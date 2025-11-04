@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
         auto file_manager = std::make_unique<esp32_ide::FileManager>();
         auto compiler = std::make_unique<esp32_ide::ESP32Compiler>();
         auto serial_monitor = std::make_unique<esp32_ide::SerialMonitor>();
+        auto syntax_highlighter = std::make_unique<esp32_ide::SyntaxHighlighter>();
         
         // Create default sketch
         file_manager->CreateFile("sketch.ino", esp32_ide::FileManager::GetDefaultSketch());
@@ -34,6 +35,7 @@ int main(int argc, char* argv[]) {
         imgui_window->SetFileManager(file_manager.get());
         imgui_window->SetCompiler(compiler.get());
         imgui_window->SetSerialMonitor(serial_monitor.get());
+        imgui_window->SetSyntaxHighlighter(syntax_highlighter.get());
         
         // Run the application
         imgui_window->Run();
