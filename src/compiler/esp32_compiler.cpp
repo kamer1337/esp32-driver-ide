@@ -198,6 +198,11 @@ ESP32Compiler::PerformanceMetrics ESP32Compiler::AnalyzePerformance(const std::s
     // Count lines of code
     metrics.code_lines = std::count(code.begin(), code.end(), '\n') + 1;
     
+    // Memory estimation constants
+    constexpr size_t BASE_RAM_USAGE = 4096;      // Base RAM overhead
+    constexpr size_t STRING_OBJECT_SIZE = 32;     // Approximate size per String object
+    constexpr size_t COMPILED_SIZE_MULTIPLIER = 4; // Approximate compiled size factor
+    
     // Estimate RAM usage
     size_t string_count = 0;
     size_t pos = 0;
@@ -205,10 +210,10 @@ ESP32Compiler::PerformanceMetrics ESP32Compiler::AnalyzePerformance(const std::s
         string_count++;
         pos++;
     }
-    metrics.estimated_ram_usage = 4096 + (string_count * 32); // Base + String objects
+    metrics.estimated_ram_usage = BASE_RAM_USAGE + (string_count * STRING_OBJECT_SIZE);
     
     // Estimate flash usage (rough approximation)
-    metrics.estimated_flash_usage = code.size() * 4; // Approximate compiled size
+    metrics.estimated_flash_usage = code.size() * COMPILED_SIZE_MULTIPLIER;
     
     // Check for performance issues
     

@@ -180,7 +180,14 @@ SerialMonitor::MemoryProfile SerialMonitor::GetMemoryProfile() const {
     profile.free_heap = 280000;
     profile.free_psram = 0;
     profile.largest_free_block = 110000;
-    profile.fragmentation_percent = ((profile.total_heap - profile.free_heap - profile.largest_free_block) * 100.0f) / profile.total_heap;
+    
+    // Calculate fragmentation: (free_heap - largest_free_block) / free_heap * 100
+    // This represents the percentage of free memory that is fragmented
+    if (profile.free_heap > 0) {
+        profile.fragmentation_percent = ((profile.free_heap - profile.largest_free_block) * 100.0f) / profile.free_heap;
+    } else {
+        profile.fragmentation_percent = 0.0f;
+    }
     
     // Generate warnings based on memory state
     if (profile.free_heap < 20000) {
@@ -226,7 +233,13 @@ void SerialMonitor::SimulateMemoryProfiling() {
         profile.free_heap = 280000 - (i * 10000); // Simulate decreasing free heap
         profile.free_psram = 0;
         profile.largest_free_block = 110000 - (i * 5000);
-        profile.fragmentation_percent = ((profile.total_heap - profile.free_heap - profile.largest_free_block) * 100.0f) / profile.total_heap;
+        
+        // Calculate fragmentation correctly
+        if (profile.free_heap > 0) {
+            profile.fragmentation_percent = ((profile.free_heap - profile.largest_free_block) * 100.0f) / profile.free_heap;
+        } else {
+            profile.fragmentation_percent = 0.0f;
+        }
         
         if (profile.free_heap < 20000) {
             profile.warnings.push_back("CRITICAL: Low free heap");
@@ -242,7 +255,9 @@ void SerialMonitor::AddWatchVariable(const std::string& name, const std::string&
     var.name = name;
     var.type = type;
     var.value = "N/A";
-    var.last_update = std::chrono::system_clock::now().time_since_epoch().count();
+    var.last_update = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
     watch_variables_.push_back(var);
 }
 
@@ -262,7 +277,9 @@ void SerialMonitor::UpdateWatchVariable(const std::string& name, const std::stri
     for (auto& var : watch_variables_) {
         if (var.name == name) {
             var.value = value;
-            var.last_update = std::chrono::system_clock::now().time_since_epoch().count();
+            var.last_update = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count();
             break;
         }
     }

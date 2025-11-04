@@ -503,7 +503,11 @@ std::string AIAssistant::ImproveReadability(const std::string& code) {
         size_t next_comma = code.find(",", pos);
         if (next_comma != std::string::npos) {
             std::string pin_arg = code.substr(pos + 8, next_comma - pos - 8);
-            if (std::all_of(pin_arg.begin(), pin_arg.end(), ::isdigit)) {
+            // Trim whitespace
+            pin_arg.erase(0, pin_arg.find_first_not_of(" \t\n\r"));
+            pin_arg.erase(pin_arg.find_last_not_of(" \t\n\r") + 1);
+            // Check if it's a numeric literal
+            if (!pin_arg.empty() && std::all_of(pin_arg.begin(), pin_arg.end(), ::isdigit)) {
                 suggestions += "// - Define pin numbers as constants (e.g., const int LED_PIN = 13;)\n";
                 has_suggestions = true;
             }
