@@ -617,17 +617,47 @@ void ImGuiWindow::RenderEditorTab() {
                     ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "(modified)");
                 }
                 
+                ImGui::SameLine();
+                ImGui::Checkbox("Syntax Highlighting", &enable_syntax_highlighting_);
+                
                 ImGui::Separator();
                 
-                // Text editor
-                ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
-                if (ImGui::InputTextMultiline("##editor", editor_tabs_[i].buffer, EDITOR_BUFFER_SIZE,
-                                              ImVec2(-1, -1), flags)) {
-                    editor_tabs_[i].content = std::string(editor_tabs_[i].buffer);
-                    editor_tabs_[i].is_modified = true;
-                    line_count_dirty_ = true;
-                    if (text_editor_) {
-                        text_editor_->SetText(editor_tabs_[i].content);
+                // If syntax highlighting is enabled, show split view
+                if (enable_syntax_highlighting_ && syntax_highlighter_) {
+                    float available_height = ImGui::GetContentRegionAvail().y;
+                    float editor_height = available_height * 0.5f;
+                    
+                    // Editable text area
+                    ImGui::Text("Edit Mode:");
+                    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+                    if (ImGui::InputTextMultiline("##editor", editor_tabs_[i].buffer, EDITOR_BUFFER_SIZE,
+                                                  ImVec2(-1, editor_height), flags)) {
+                        editor_tabs_[i].content = std::string(editor_tabs_[i].buffer);
+                        editor_tabs_[i].is_modified = true;
+                        line_count_dirty_ = true;
+                        if (text_editor_) {
+                            text_editor_->SetText(editor_tabs_[i].content);
+                        }
+                    }
+                    
+                    ImGui::Separator();
+                    ImGui::Text("Preview with Syntax Highlighting:");
+                    
+                    // Syntax highlighted preview
+                    ImGui::BeginChild("SyntaxPreview", ImVec2(-1, -1), true, ImGuiWindowFlags_HorizontalScrollbar);
+                    RenderSyntaxHighlightedText(editor_tabs_[i].content);
+                    ImGui::EndChild();
+                } else {
+                    // Plain text editor (original behavior)
+                    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+                    if (ImGui::InputTextMultiline("##editor", editor_tabs_[i].buffer, EDITOR_BUFFER_SIZE,
+                                                  ImVec2(-1, -1), flags)) {
+                        editor_tabs_[i].content = std::string(editor_tabs_[i].buffer);
+                        editor_tabs_[i].is_modified = true;
+                        line_count_dirty_ = true;
+                        if (text_editor_) {
+                            text_editor_->SetText(editor_tabs_[i].content);
+                        }
                     }
                 }
                 
@@ -848,49 +878,153 @@ void ImGuiWindow::RenderReverseEngineeringTab() {
 }
 
 void ImGuiWindow::RenderPropertiesPanel() {
-    ImGui::Text("Editor Properties");
-    ImGui::Separator();
-    
-    ImGui::Text("File Info:");
-    if (!editor_tabs_.empty() && active_editor_tab_ < editor_tabs_.size()) {
-        const auto& tab = editor_tabs_[active_editor_tab_];
-        ImGui::BulletText("Name: %s", tab.filename.c_str());
-        ImGui::BulletText("Size: %zu bytes", tab.content.size());
-        
-        // Calculate line count only when content changes
-        if (line_count_dirty_) {
-            cached_line_count_ = static_cast<int>(std::count(tab.content.begin(), tab.content.end(), '\n') + 1);
-            line_count_dirty_ = false;
+    if (ImGui::BeginTabBar("PropertiesTabs")) {
+        if (ImGui::BeginTabItem("Editor")) {
+            ImGui::Text("File Info:");
+            if (!editor_tabs_.empty() && active_editor_tab_ < editor_tabs_.size()) {
+                const auto& tab = editor_tabs_[active_editor_tab_];
+                ImGui::BulletText("Name: %s", tab.filename.c_str());
+                ImGui::BulletText("Size: %zu bytes", tab.content.size());
+                
+                // Calculate line count only when content changes
+                if (line_count_dirty_) {
+                    cached_line_count_ = static_cast<int>(std::count(tab.content.begin(), tab.content.end(), '\n') + 1);
+                    line_count_dirty_ = false;
+                }
+                ImGui::BulletText("Lines: %d", cached_line_count_);
+                ImGui::BulletText("Modified: %s", tab.is_modified ? "Yes" : "No");
+            } else {
+                ImGui::TextDisabled("No file loaded");
+            }
+            
+            ImGui::Separator();
+            ImGui::Text("Editor Settings:");
+            
+            static bool show_line_numbers = true;
+            static bool auto_indent = true;
+            
+            ImGui::Checkbox("Show line numbers", &show_line_numbers);
+            ImGui::Checkbox("Auto indent", &auto_indent);
+            ImGui::Checkbox("Syntax highlighting", &enable_syntax_highlighting_);
+            
+            ImGui::Separator();
+            ImGui::Text("Board Config:");
+            
+            static int board_type = 0;
+            const char* board_types[] = { "ESP32", "ESP32-S2", "ESP32-S3", "ESP32-C3" };
+            ImGui::Combo("Board", &board_type, board_types, IM_ARRAYSIZE(board_types));
+            
+            static int freq = 240;
+            ImGui::SliderInt("CPU Freq (MHz)", &freq, 80, 240);
+            
+            if (ImGui::Button("Apply Settings")) {
+                AddConsoleMessage("Settings applied");
+            }
+            
+            ImGui::EndTabItem();
         }
-        ImGui::BulletText("Lines: %d", cached_line_count_);
-        ImGui::BulletText("Modified: %s", tab.is_modified ? "Yes" : "No");
-    } else {
-        ImGui::TextDisabled("No file loaded");
-    }
-    
-    ImGui::Separator();
-    ImGui::Text("Editor Settings:");
-    
-    static bool show_line_numbers = true;
-    static bool auto_indent = true;
-    static bool syntax_highlight = true;
-    
-    ImGui::Checkbox("Show line numbers", &show_line_numbers);
-    ImGui::Checkbox("Auto indent", &auto_indent);
-    ImGui::Checkbox("Syntax highlighting", &syntax_highlight);
-    
-    ImGui::Separator();
-    ImGui::Text("Board Config:");
-    
-    static int board_type = 0;
-    const char* board_types[] = { "ESP32", "ESP32-S2", "ESP32-S3", "ESP32-C3" };
-    ImGui::Combo("Board", &board_type, board_types, IM_ARRAYSIZE(board_types));
-    
-    static int freq = 240;
-    ImGui::SliderInt("CPU Freq (MHz)", &freq, 80, 240);
-    
-    if (ImGui::Button("Apply Settings")) {
-        AddConsoleMessage("Settings applied");
+        
+        if (ImGui::BeginTabItem("Templates")) {
+            ImGui::Text("Code Templates");
+            ImGui::Separator();
+            
+            if (file_manager_) {
+                auto templates = file_manager_->GetTemplates();
+                
+                if (templates.empty()) {
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No templates available");
+                } else {
+                    ImGui::Text("Available templates: %zu", templates.size());
+                    ImGui::Spacing();
+                    
+                    ImGui::BeginChild("TemplateList", ImVec2(0, -30), true);
+                    for (const auto& tmpl : templates) {
+                        ImGui::PushID(tmpl.name.c_str());
+                        
+                        ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "%s", tmpl.name.c_str());
+                        ImGui::TextWrapped("%s", tmpl.description.c_str());
+                        
+                        if (ImGui::Button("Insert")) {
+                            auto code = file_manager_->ApplyTemplate(tmpl.name, {});
+                            if (!code.empty()) {
+                                InsertCodeIntoEditor(code);
+                            }
+                        }
+                        
+                        ImGui::Separator();
+                        ImGui::PopID();
+                    }
+                    ImGui::EndChild();
+                }
+            } else {
+                ImGui::TextDisabled("File manager not available");
+            }
+            
+            ImGui::EndTabItem();
+        }
+        
+        if (ImGui::BeginTabItem("Completion")) {
+            ImGui::Text("Code Completion");
+            ImGui::Separator();
+            
+            ImGui::TextWrapped("Available code completion features:");
+            ImGui::Spacing();
+            
+            if (ImGui::CollapsingHeader("GPIO Functions")) {
+                if (ImGui::Button("pinMode()")) {
+                    InsertCodeIntoEditor("pinMode(pin, mode);");
+                }
+                if (ImGui::Button("digitalWrite()")) {
+                    InsertCodeIntoEditor("digitalWrite(pin, value);");
+                }
+                if (ImGui::Button("digitalRead()")) {
+                    InsertCodeIntoEditor("digitalRead(pin);");
+                }
+                if (ImGui::Button("analogRead()")) {
+                    InsertCodeIntoEditor("analogRead(pin);");
+                }
+            }
+            
+            if (ImGui::CollapsingHeader("Serial Functions")) {
+                if (ImGui::Button("Serial.begin()")) {
+                    InsertCodeIntoEditor("Serial.begin(115200);");
+                }
+                if (ImGui::Button("Serial.println()")) {
+                    InsertCodeIntoEditor("Serial.println(\"message\");");
+                }
+                if (ImGui::Button("Serial.print()")) {
+                    InsertCodeIntoEditor("Serial.print(\"message\");");
+                }
+            }
+            
+            if (ImGui::CollapsingHeader("WiFi Functions")) {
+                if (ImGui::Button("WiFi.begin()")) {
+                    InsertCodeIntoEditor("WiFi.begin(ssid, password);");
+                }
+                if (ImGui::Button("WiFi.status()")) {
+                    InsertCodeIntoEditor("WiFi.status();");
+                }
+                if (ImGui::Button("WiFi.localIP()")) {
+                    InsertCodeIntoEditor("WiFi.localIP();");
+                }
+            }
+            
+            if (ImGui::CollapsingHeader("Timing Functions")) {
+                if (ImGui::Button("delay()")) {
+                    InsertCodeIntoEditor("delay(1000);");
+                }
+                if (ImGui::Button("millis()")) {
+                    InsertCodeIntoEditor("millis();");
+                }
+                if (ImGui::Button("micros()")) {
+                    InsertCodeIntoEditor("micros();");
+                }
+            }
+            
+            ImGui::EndTabItem();
+        }
+        
+        ImGui::EndTabBar();
     }
 }
 
