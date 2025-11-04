@@ -42,6 +42,33 @@ public:
     std::string GenerateSerialCode() const;
     std::string GenerateSensorCode(const std::string& sensor_type) const;
     
+    // AI-powered code refactoring
+    std::string RefactorCode(const std::string& code, const std::string& refactor_type);
+    std::string OptimizeCode(const std::string& code);
+    std::string ImproveReadability(const std::string& code);
+    
+    // Automatic bug detection
+    struct BugReport {
+        std::string severity; // "critical", "warning", "suggestion"
+        int line_number;
+        std::string description;
+        std::string suggested_fix;
+    };
+    std::vector<BugReport> DetectBugs(const std::string& code);
+    std::string AutoFixBugs(const std::string& code);
+    
+    // Code completion
+    struct CompletionSuggestion {
+        std::string text;
+        std::string description;
+        int priority; // Higher = more relevant
+    };
+    std::vector<CompletionSuggestion> GetCompletionSuggestions(
+        const std::string& code, 
+        int cursor_position,
+        const std::string& current_line
+    );
+    
 private:
     std::vector<Message> history_;
     

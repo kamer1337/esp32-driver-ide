@@ -174,4 +174,88 @@ void TextEditor::NotifyChange() {
     }
 }
 
+// Breakpoint support implementation
+void TextEditor::ToggleBreakpoint(size_t line_number) {
+    if (HasBreakpoint(line_number)) {
+        RemoveBreakpoint(line_number);
+    } else {
+        AddBreakpoint(line_number);
+    }
+}
+
+void TextEditor::AddBreakpoint(size_t line_number) {
+    if (!HasBreakpoint(line_number)) {
+        breakpoints_.push_back(line_number);
+        std::sort(breakpoints_.begin(), breakpoints_.end());
+    }
+}
+
+void TextEditor::RemoveBreakpoint(size_t line_number) {
+    breakpoints_.erase(
+        std::remove(breakpoints_.begin(), breakpoints_.end(), line_number),
+        breakpoints_.end()
+    );
+}
+
+void TextEditor::ClearAllBreakpoints() {
+    breakpoints_.clear();
+}
+
+std::vector<size_t> TextEditor::GetBreakpoints() const {
+    return breakpoints_;
+}
+
+bool TextEditor::HasBreakpoint(size_t line_number) const {
+    return std::find(breakpoints_.begin(), breakpoints_.end(), line_number) != breakpoints_.end();
+}
+
+// Code completion implementation
+std::vector<TextEditor::CompletionItem> TextEditor::GetCompletionsAtCursor() const {
+    std::vector<CompletionItem> completions;
+    
+    // Get current line text
+    size_t current_line = GetCurrentLine();
+    if (current_line == 0 || current_line > GetLineCount()) {
+        return completions;
+    }
+    
+    std::string line = GetLine(current_line);
+    std::string lower_line = line;
+    std::transform(lower_line.begin(), lower_line.end(), lower_line.begin(), ::tolower);
+    
+    // Arduino/ESP32 common completions
+    if (lower_line.find("pin") != std::string::npos || lower_line.find("gpio") != std::string::npos) {
+        completions.push_back({"pinMode", "Configure pin mode", "pinMode(pin, OUTPUT);", 95});
+        completions.push_back({"digitalWrite", "Write digital value", "digitalWrite(pin, HIGH);", 90});
+        completions.push_back({"digitalRead", "Read digital value", "digitalRead(pin)", 90});
+        completions.push_back({"analogRead", "Read analog value", "analogRead(pin)", 85});
+    }
+    
+    if (lower_line.find("serial") != std::string::npos) {
+        completions.push_back({"Serial.begin", "Initialize serial", "Serial.begin(115200);", 95});
+        completions.push_back({"Serial.println", "Print with newline", "Serial.println();", 90});
+        completions.push_back({"Serial.print", "Print without newline", "Serial.print();", 88});
+    }
+    
+    if (lower_line.find("wifi") != std::string::npos) {
+        completions.push_back({"WiFi.begin", "Connect to WiFi", "WiFi.begin(ssid, password);", 95});
+        completions.push_back({"WiFi.status", "Get WiFi status", "WiFi.status()", 90});
+        completions.push_back({"WiFi.localIP", "Get IP address", "WiFi.localIP()", 85});
+    }
+    
+    if (lower_line.find("delay") != std::string::npos || lower_line.find("time") != std::string::npos) {
+        completions.push_back({"delay", "Blocking delay", "delay(1000);", 90});
+        completions.push_back({"millis", "Get milliseconds", "millis()", 95});
+        completions.push_back({"micros", "Get microseconds", "micros()", 85});
+    }
+    
+    // Sort by priority
+    std::sort(completions.begin(), completions.end(),
+              [](const CompletionItem& a, const CompletionItem& b) {
+                  return a.priority > b.priority;
+              });
+    
+    return completions;
+}
+
 } // namespace esp32_ide

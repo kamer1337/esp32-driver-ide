@@ -53,6 +53,23 @@ public:
     std::vector<size_t> FindText(const std::string& query) const;
     bool ReplaceText(const std::string& search, const std::string& replace);
     
+    // Breakpoint support
+    void ToggleBreakpoint(size_t line_number);
+    void AddBreakpoint(size_t line_number);
+    void RemoveBreakpoint(size_t line_number);
+    void ClearAllBreakpoints();
+    std::vector<size_t> GetBreakpoints() const;
+    bool HasBreakpoint(size_t line_number) const;
+    
+    // Code completion
+    struct CompletionItem {
+        std::string text;
+        std::string description;
+        std::string insert_text;
+        int priority;
+    };
+    std::vector<CompletionItem> GetCompletionsAtCursor() const;
+    
 private:
     struct EditorState {
         std::string content;
@@ -65,6 +82,7 @@ private:
     std::vector<EditorState> undo_stack_;
     std::vector<EditorState> redo_stack_;
     ChangeCallback change_callback_;
+    std::vector<size_t> breakpoints_;
     
     void SaveState();
     void NotifyChange();

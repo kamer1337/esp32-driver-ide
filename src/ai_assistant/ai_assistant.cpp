@@ -434,4 +434,258 @@ bool AIAssistant::ContainsKeywords(const std::string& text,
     return false;
 }
 
+// AI-powered code refactoring
+std::string AIAssistant::RefactorCode(const std::string& code, const std::string& refactor_type) {
+    std::string lower_type = refactor_type;
+    std::transform(lower_type.begin(), lower_type.end(), lower_type.begin(), ::tolower);
+    
+    if (lower_type == "optimize" || lower_type == "performance") {
+        return OptimizeCode(code);
+    } else if (lower_type == "readability" || lower_type == "clean") {
+        return ImproveReadability(code);
+    }
+    
+    // Default: comprehensive refactoring
+    std::string refactored = code;
+    
+    // Replace blocking delays with millis() pattern
+    if (refactored.find("delay(") != std::string::npos && 
+        refactored.find("loop()") != std::string::npos) {
+        std::string suggestion = "// Refactoring suggestion: Replace delay() with millis() for non-blocking operation\n"
+                                "// Example:\n"
+                                "// unsigned long previousMillis = 0;\n"
+                                "// const long interval = 1000;\n"
+                                "// In loop(): if (millis() - previousMillis >= interval) { ... }\n\n";
+        refactored = suggestion + refactored;
+    }
+    
+    return refactored;
+}
+
+std::string AIAssistant::OptimizeCode(const std::string& code) {
+    std::string optimized = code;
+    std::string suggestions = "// Optimization suggestions:\n";
+    bool has_suggestions = false;
+    
+    // Check for repeated calculations
+    if (code.find("analogRead") != std::string::npos) {
+        suggestions += "// - Cache analogRead() results if reading same pin multiple times\n";
+        has_suggestions = true;
+    }
+    
+    // Check for String usage (memory intensive)
+    if (code.find("String ") != std::string::npos) {
+        suggestions += "// - Consider using char arrays instead of String for better memory management\n";
+        has_suggestions = true;
+    }
+    
+    // Check for Serial.print in loops
+    if (code.find("Serial.print") != std::string::npos && code.find("for(") != std::string::npos) {
+        suggestions += "// - Minimize Serial.print() calls in loops for better performance\n";
+        has_suggestions = true;
+    }
+    
+    if (has_suggestions) {
+        optimized = suggestions + "\n" + optimized;
+    }
+    
+    return optimized;
+}
+
+std::string AIAssistant::ImproveReadability(const std::string& code) {
+    std::string improved = code;
+    std::string suggestions = "// Readability improvements:\n";
+    bool has_suggestions = false;
+    
+    // Check for magic numbers
+    if (code.find("pinMode(") != std::string::npos) {
+        size_t pos = code.find("pinMode(");
+        size_t next_comma = code.find(",", pos);
+        if (next_comma != std::string::npos) {
+            std::string pin_arg = code.substr(pos + 8, next_comma - pos - 8);
+            if (std::all_of(pin_arg.begin(), pin_arg.end(), ::isdigit)) {
+                suggestions += "// - Define pin numbers as constants (e.g., const int LED_PIN = 13;)\n";
+                has_suggestions = true;
+            }
+        }
+    }
+    
+    // Check for lack of comments
+    if (code.size() > 100 && code.find("//") == std::string::npos && code.find("/*") == std::string::npos) {
+        suggestions += "// - Add comments to explain complex logic\n";
+        has_suggestions = true;
+    }
+    
+    if (has_suggestions) {
+        improved = suggestions + "\n" + improved;
+    }
+    
+    return improved;
+}
+
+// Automatic bug detection
+std::vector<AIAssistant::BugReport> AIAssistant::DetectBugs(const std::string& code) {
+    std::vector<BugReport> bugs;
+    int line_num = 1;
+    size_t pos = 0;
+    
+    // Track line numbers
+    auto get_line_number = [&](size_t position) {
+        int line = 1;
+        for (size_t i = 0; i < position && i < code.size(); i++) {
+            if (code[i] == '\n') line++;
+        }
+        return line;
+    };
+    
+    // Check for Serial usage without initialization
+    if (code.find("Serial.") != std::string::npos) {
+        if (code.find("Serial.begin") == std::string::npos) {
+            BugReport bug;
+            bug.severity = "critical";
+            bug.line_number = get_line_number(code.find("Serial."));
+            bug.description = "Serial used without initialization";
+            bug.suggested_fix = "Add Serial.begin(115200); in setup() function";
+            bugs.push_back(bug);
+        }
+    }
+    
+    // Check for pinMode missing before GPIO operations
+    if ((code.find("digitalWrite") != std::string::npos || code.find("digitalRead") != std::string::npos)) {
+        if (code.find("pinMode") == std::string::npos) {
+            BugReport bug;
+            bug.severity = "critical";
+            bug.line_number = get_line_number(code.find("digitalWrite"));
+            bug.description = "GPIO operations without pinMode configuration";
+            bug.suggested_fix = "Add pinMode(pin, MODE); in setup() before using the pin";
+            bugs.push_back(bug);
+        }
+    }
+    
+    // Check for missing WiFi include
+    if (code.find("WiFi.") != std::string::npos) {
+        if (code.find("#include <WiFi.h>") == std::string::npos && 
+            code.find("#include \"WiFi.h\"") == std::string::npos) {
+            BugReport bug;
+            bug.severity = "critical";
+            bug.line_number = 1;
+            bug.description = "WiFi used without including WiFi.h";
+            bug.suggested_fix = "Add #include <WiFi.h> at the top of the file";
+            bugs.push_back(bug);
+        }
+    }
+    
+    // Check for delay in time-critical code
+    if (code.find("delay(") != std::string::npos && 
+        (code.find("interrupt") != std::string::npos || code.find("ISR") != std::string::npos)) {
+        BugReport bug;
+        bug.severity = "warning";
+        bug.line_number = get_line_number(code.find("delay("));
+        bug.description = "Delay used in interrupt-related code";
+        bug.suggested_fix = "Use millis() or hardware timers instead of delay()";
+        bugs.push_back(bug);
+    }
+    
+    // Check for floating point in loop counters
+    if (code.find("for") != std::string::npos && code.find("float") != std::string::npos) {
+        BugReport bug;
+        bug.severity = "suggestion";
+        bug.line_number = get_line_number(code.find("for"));
+        bug.description = "Possible floating-point loop counter";
+        bug.suggested_fix = "Use integer loop counters for better performance";
+        bugs.push_back(bug);
+    }
+    
+    return bugs;
+}
+
+std::string AIAssistant::AutoFixBugs(const std::string& code) {
+    std::string fixed = code;
+    std::vector<BugReport> bugs = DetectBugs(code);
+    
+    // Apply automatic fixes for common bugs
+    for (const auto& bug : bugs) {
+        if (bug.severity == "critical") {
+            // Add Serial.begin if missing
+            if (bug.description.find("Serial used without initialization") != std::string::npos) {
+                size_t setup_pos = fixed.find("void setup()");
+                if (setup_pos != std::string::npos) {
+                    size_t brace_pos = fixed.find("{", setup_pos);
+                    if (brace_pos != std::string::npos) {
+                        fixed.insert(brace_pos + 1, "\n  Serial.begin(115200);");
+                    }
+                }
+            }
+            
+            // Add WiFi include if missing
+            if (bug.description.find("WiFi used without including") != std::string::npos) {
+                fixed = "#include <WiFi.h>\n" + fixed;
+            }
+        }
+    }
+    
+    return fixed;
+}
+
+// Code completion suggestions
+std::vector<AIAssistant::CompletionSuggestion> AIAssistant::GetCompletionSuggestions(
+    const std::string& code, 
+    int cursor_position,
+    const std::string& current_line) {
+    
+    std::vector<CompletionSuggestion> suggestions;
+    
+    std::string lower_line = current_line;
+    std::transform(lower_line.begin(), lower_line.end(), lower_line.begin(), ::tolower);
+    
+    // GPIO suggestions
+    if (lower_line.find("pin") != std::string::npos || lower_line.find("gpio") != std::string::npos) {
+        suggestions.push_back({"pinMode(pin, OUTPUT);", "Set pin as output", 90});
+        suggestions.push_back({"pinMode(pin, INPUT);", "Set pin as input", 90});
+        suggestions.push_back({"pinMode(pin, INPUT_PULLUP);", "Set pin as input with pullup", 85});
+        suggestions.push_back({"digitalWrite(pin, HIGH);", "Set pin HIGH", 88});
+        suggestions.push_back({"digitalWrite(pin, LOW);", "Set pin LOW", 88});
+        suggestions.push_back({"digitalRead(pin)", "Read digital pin", 87});
+        suggestions.push_back({"analogRead(pin)", "Read analog pin", 86});
+    }
+    
+    // Serial suggestions
+    if (lower_line.find("serial") != std::string::npos) {
+        suggestions.push_back({"Serial.begin(115200);", "Initialize serial", 95});
+        suggestions.push_back({"Serial.println();", "Print line to serial", 90});
+        suggestions.push_back({"Serial.print();", "Print to serial", 88});
+        suggestions.push_back({"Serial.available()", "Check if data available", 85});
+        suggestions.push_back({"Serial.read()", "Read one byte", 84});
+    }
+    
+    // WiFi suggestions
+    if (lower_line.find("wifi") != std::string::npos) {
+        suggestions.push_back({"WiFi.begin(ssid, password);", "Connect to WiFi", 95});
+        suggestions.push_back({"WiFi.status()", "Get WiFi status", 90});
+        suggestions.push_back({"WiFi.localIP()", "Get IP address", 88});
+        suggestions.push_back({"WiFi.disconnect();", "Disconnect WiFi", 85});
+    }
+    
+    // Delay/timing suggestions
+    if (lower_line.find("delay") != std::string::npos || lower_line.find("time") != std::string::npos) {
+        suggestions.push_back({"delay(1000);", "Delay 1 second (blocking)", 90});
+        suggestions.push_back({"millis()", "Get milliseconds since start", 92});
+        suggestions.push_back({"unsigned long currentMillis = millis();", "Non-blocking timing", 95});
+    }
+    
+    // Setup/loop template
+    if (lower_line.find("setup") != std::string::npos || code.empty()) {
+        suggestions.push_back({"void setup() {\n  // Initialize\n}", "Setup function", 100});
+        suggestions.push_back({"void loop() {\n  // Main code\n}", "Loop function", 100});
+    }
+    
+    // Sort by priority
+    std::sort(suggestions.begin(), suggestions.end(), 
+              [](const CompletionSuggestion& a, const CompletionSuggestion& b) {
+                  return a.priority > b.priority;
+              });
+    
+    return suggestions;
+}
+
 } // namespace esp32_ide
