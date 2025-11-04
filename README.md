@@ -4,21 +4,33 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 
 ![ESP32 Driver IDE](https://github.com/user-attachments/assets/18511046-9c87-48ff-a377-960e97afd9f3)
 
-## ✨ Latest Update: AI Code Generation & Realtime Debugging
+## ✨ Latest Update: Advanced AI Features & Professional Debugging
 
-**🤖 AI-Powered Code Writing**: The AI assistant can now generate complete, working code snippets and insert them directly into your editor!
+**🤖 AI-Powered Development Suite**: Complete AI-powered code refactoring, automatic bug detection, and intelligent code completion!
 
-**🔍 Realtime Device Debugging**: Monitor live data from your ESP32 device with variable inspection and color-coded messages!
+**🔍 Professional Debugging Tools**: Breakpoint debugging, variable watch expressions, memory profiling, and performance analysis!
 
 📖 **[Read the AI Code Generation Guide](AI_CODE_GENERATION.md)**
 
-### New Capabilities
+### New Advanced Capabilities
 
+#### AI-Powered Features
+- **Code Refactoring**: Automatic code optimization and readability improvements
+- **Bug Detection**: Detects common ESP32 bugs before compilation with auto-fix
+- **Code Templates**: Built-in templates for WiFi, sensors, LED, web servers
+- **Smart Completion**: Context-aware code completion with ESP32-specific suggestions
+
+#### Professional Debugging
+- **Breakpoint Support**: Set breakpoints on any line for step-through debugging
+- **Variable Watch**: Monitor variables in real-time during execution
+- **Memory Profiling**: Track heap usage, fragmentation, and memory leaks
+- **Performance Analysis**: Get performance scores and optimization suggestions
+
+#### Previous Features
 - **Generate Code**: Ask AI to "Generate code for LED blink" and get working code instantly
 - **Insert Directly**: One-click code insertion into your active editor tab
 - **Live Debugging**: Start debugging to see real-time data from your connected device
 - **Variable Inspection**: Monitor heap memory, WiFi status, GPIO states, and more
-- **Enhanced Safety**: Improved error handling prevents crashes and white screens
 
 ## ✨ ImGui Interface
 
@@ -40,21 +52,28 @@ The IDE features a complete ImGui-based GUI with:
 - **Code Search**: Find and replace functionality
 - **Line Management**: Line-based operations and navigation
 - **Hierarchical File Tree**: Folder-subfolder-file.ino structure
+- **Breakpoint Support**: Visual breakpoint indicators on code lines
+- **Code Completion**: Smart suggestions as you type
 
 ### 🤖 AI Assistant (Enhanced!)
 - **Integrated Chat**: Ask questions about ESP32 APIs, debugging, and best practices
 - **Code Generation**: Generate complete working code for LED, WiFi, Bluetooth, sensors, and more
 - **Direct Code Insertion**: Insert generated code into editor with one click
 - **Code Analysis**: Get suggestions and improvements for your code
+- **AI Refactoring**: Automatic code optimization and readability improvements
+- **Bug Detection**: Detects and auto-fixes common ESP32 bugs
+- **Smart Completion**: Context-aware code completion suggestions
+- **Code Templates**: 5+ built-in templates (LED, WiFi, sensors, web server)
 - **Context-Aware**: Understands ESP32-specific development challenges
 - **Error Suggestions**: Provides fixes for common errors
-- **Interactive Learning**: Learn by generating and modifying AI-created code
 
-### 🔍 Realtime Debugging (New!)
+### 🔍 Professional Debugging
 - **Live Data Monitoring**: Stream real-time data from connected ESP32 devices
-- **Variable Inspection**: View heap memory, WiFi status, GPIO states, CPU frequency
+- **Breakpoint Support**: Set/remove breakpoints on any line
+- **Variable Watch**: Add variables to watch list for real-time monitoring
+- **Memory Profiling**: Track heap usage, fragmentation, and memory warnings
+- **Performance Analysis**: Get code performance scores (0-100) with suggestions
 - **Color-Coded Output**: Red for errors, yellow for warnings, green for success
-- **Breakpoint Support**: Framework ready for breakpoint debugging (coming soon)
 - **Device Validation**: Ensures USB connection before debugging operations
 
 ### ⚙️ ESP32 Development Tools
