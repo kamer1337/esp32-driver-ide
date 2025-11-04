@@ -20,6 +20,11 @@ namespace gui {
 
 // Constants
 static constexpr size_t EDITOR_BUFFER_SIZE = 1024 * 1024; // 1MB buffer for text editor
+
+// UI Panel widths
+static constexpr float LEFT_PANEL_WIDTH = 250.0f;
+static constexpr float RIGHT_PANEL_WIDTH = 250.0f;
+static constexpr float AI_PANEL_WIDTH = 300.0f;
 static const char* DEFAULT_SKETCH_TEMPLATE = 
     "void setup() {\n"
     "  // put your setup code here, to run once:\n"
@@ -237,9 +242,9 @@ void ImGuiWindow::Run() {
         
         // Four-column layout (added AI assistant)
         float window_width = ImGui::GetContentRegionAvail().x;
-        float left_panel_width = (show_file_explorer_ || show_board_list_) ? 250.0f : 0.0f;
-        float right_panel_width = show_properties_panel_ ? 250.0f : 0.0f;
-        float ai_panel_width = show_ai_assistant_ ? 300.0f : 0.0f;
+        float left_panel_width = (show_file_explorer_ || show_board_list_) ? LEFT_PANEL_WIDTH : 0.0f;
+        float right_panel_width = show_properties_panel_ ? RIGHT_PANEL_WIDTH : 0.0f;
+        float ai_panel_width = show_ai_assistant_ ? AI_PANEL_WIDTH : 0.0f;
         float center_panel_width = window_width - left_panel_width - right_panel_width - ai_panel_width;
         
         // Left panel - File Explorer and Board List
@@ -623,7 +628,7 @@ void ImGuiWindow::RenderEditorTab() {
                 ImGui::Separator();
                 
                 // If syntax highlighting is enabled, show split view
-                if (enable_syntax_highlighting_ && syntax_highlighter_) {
+                if (syntax_highlighter_ && enable_syntax_highlighting_) {
                     float available_height = ImGui::GetContentRegionAvail().y;
                     float editor_height = available_height * 0.5f;
                     
@@ -1748,18 +1753,26 @@ void ImGuiWindow::RefreshBoardList() {
         board.port = port;
         board.is_connected = (port == selected_port_ && is_connected_);
         
-        // Simulate board detection (in real implementation, this would query the device)
-        if (port.find("USB") != std::string::npos || port.find("ttyUSB") != std::string::npos) {
+        // NOTE: This is a simplified board detection based on port name patterns.
+        // In a production implementation, this should:
+        // 1. Query the device via serial for chip ID (using esptool.py protocol)
+        // 2. Read manufacturer/product strings from USB descriptors
+        // 3. Use vendor ID (VID) and product ID (PID) to identify ESP32 devices
+        // Current heuristic-based approach may incorrectly identify non-ESP32 devices.
+        
+        // ESP32 boards typically use CP2102, CH340, or FTDI USB-to-serial chips
+        if (port.find("ttyUSB") != std::string::npos || port.find("USB") != std::string::npos) {
             board.name = "ESP32-DevKit";
             board.chip = "ESP32";
             board.flash_size_mb = 4;
             board.ram_size_kb = 520;
-        } else if (port.find("ACM") != std::string::npos || port.find("ttyACM") != std::string::npos) {
+        } else if (port.find("ttyACM") != std::string::npos || port.find("ACM") != std::string::npos) {
             board.name = "ESP32-S3-DevKit";
             board.chip = "ESP32-S3";
             board.flash_size_mb = 8;
             board.ram_size_kb = 512;
         } else {
+            // Default fallback for unrecognized ports
             board.name = "ESP32 Board";
             board.chip = "ESP32";
             board.flash_size_mb = 4;
@@ -1918,10 +1931,11 @@ void ImGuiWindow::RenderSyntaxHighlightedText(const std::string& code) {
         
         ImGui::TextColored(color, "%s", token.text.c_str());
         
-        // Don't add newline after each token - let text flow naturally
+        // Handle line breaks properly - if token contains newline, don't use SameLine
         if (token.text.find('\n') == std::string::npos) {
             ImGui::SameLine(0, 0);
         }
+        // If token ends with newline, the next token will naturally start on new line
     }
 }
 
