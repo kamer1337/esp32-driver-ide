@@ -11,12 +11,21 @@ namespace gui {
 
 // Node implementation
 void Node::AddInputPin(const std::string& pin_name, PinType pin_type) {
-    int pin_id = input_pins.size() + output_pins.size();
+    // Pin IDs should be globally unique across all nodes
+    // The BlueprintEditor should manage pin ID generation
+    // For now, we'll use a simple approach but this should be refactored
+    // to use the editor's next_pin_id_
+    int pin_id = static_cast<int>(id * BlueprintEditor::PIN_ID_MULTIPLIER + input_pins.size());
     input_pins.emplace_back(pin_id, pin_name, pin_type, id);
 }
 
 void Node::AddOutputPin(const std::string& pin_name, PinType pin_type) {
-    int pin_id = input_pins.size() + output_pins.size();
+    // Pin IDs should be globally unique across all nodes
+    // The BlueprintEditor should manage pin ID generation
+    // For now, we'll use a simple approach but this should be refactored
+    // to use the editor's next_pin_id_
+    int pin_id = static_cast<int>(id * BlueprintEditor::PIN_ID_MULTIPLIER + 
+                                   BlueprintEditor::OUTPUT_PIN_OFFSET + output_pins.size());
     output_pins.emplace_back(pin_id, pin_name, pin_type, id);
 }
 

@@ -139,6 +139,10 @@ public:
     void Clear();
     std::string GenerateCode() const;
     
+    // Pin ID generation constants (public for Node access)
+    static constexpr int PIN_ID_MULTIPLIER = 1000;
+    static constexpr int OUTPUT_PIN_OFFSET = 500;
+    
 private:
     ax::NodeEditor::EditorContext* context_;
     

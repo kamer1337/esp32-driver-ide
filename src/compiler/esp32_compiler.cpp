@@ -116,6 +116,17 @@ void ESP32Compiler::OutputMessage(const std::string& message, CompileStatus stat
     }
 }
 
+// Helper function to count consecutive backslashes before a position
+static size_t CountPrecedingBackslashes(const std::string& code, size_t pos) {
+    size_t count = 0;
+    size_t i = pos;
+    while (i > 0 && code[i - 1] == '\\') {
+        count++;
+        i--;
+    }
+    return count;
+}
+
 bool ESP32Compiler::CheckBracketBalance(const std::string& code) {
     int braces = 0;
     int brackets = 0;
@@ -143,8 +154,8 @@ bool ESP32Compiler::CheckBracketBalance(const std::string& code) {
             continue;
         }
         
-        // Check for comment start
-        if (c == '/' && i + 1 < code.length()) {
+        // Check for comment start (only if not in string or char)
+        if (!in_string && !in_char && c == '/' && i + 1 < code.length()) {
             if (code[i + 1] == '/') {
                 in_line_comment = true;
                 continue;
@@ -155,17 +166,21 @@ bool ESP32Compiler::CheckBracketBalance(const std::string& code) {
             }
         }
         
-        // Handle strings
+        // Handle strings with proper escape sequence handling
         if (c == '"' && !in_char) {
-            if (i == 0 || code[i - 1] != '\\') {
+            // Quote is escaped only if odd number of backslashes precede it
+            size_t backslash_count = CountPrecedingBackslashes(code, i);
+            if (backslash_count % 2 == 0) {
                 in_string = !in_string;
             }
             continue;
         }
         
-        // Handle character literals
+        // Handle character literals with proper escape sequence handling
         if (c == '\'' && !in_string) {
-            if (i == 0 || code[i - 1] != '\\') {
+            // Quote is escaped only if odd number of backslashes precede it
+            size_t backslash_count = CountPrecedingBackslashes(code, i);
+            if (backslash_count % 2 == 0) {
                 in_char = !in_char;
             }
             continue;

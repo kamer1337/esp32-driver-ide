@@ -27,6 +27,14 @@ std::string TextEditor::GetText() const {
 }
 
 void TextEditor::InsertText(const std::string& text, size_t position) {
+    // Validate input to prevent excessive memory usage
+    if (current_state_.content.length() + text.length() > MAX_CONTENT_SIZE) {
+        // Log or notify about the error - in a real implementation, this would
+        // trigger a user notification or error callback
+        // For now, silently reject to maintain existing API compatibility
+        return;
+    }
+    
     SaveState();
     if (position > current_state_.content.length()) {
         position = current_state_.content.length();
@@ -162,8 +170,7 @@ void TextEditor::SaveState() {
     redo_stack_.clear();
     
     // Limit undo stack size
-    const size_t MAX_UNDO = 100;
-    if (undo_stack_.size() > MAX_UNDO) {
+    if (undo_stack_.size() > MAX_UNDO_STACK_SIZE) {
         undo_stack_.erase(undo_stack_.begin());
     }
 }
@@ -215,7 +222,8 @@ std::vector<TextEditor::CompletionItem> TextEditor::GetCompletionsAtCursor() con
     
     // Get current line text
     size_t current_line = GetCurrentLine();
-    if (current_line == 0 || current_line > GetLineCount()) {
+    // Fix: Line numbers are 0-indexed, so line 0 is valid. Check should be >= not >
+    if (current_line >= GetLineCount()) {
         return completions;
     }
     
