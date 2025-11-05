@@ -170,8 +170,7 @@ void TextEditor::SaveState() {
     redo_stack_.clear();
     
     // Limit undo stack size
-    const size_t MAX_UNDO = 100;
-    if (undo_stack_.size() > MAX_UNDO) {
+    if (undo_stack_.size() > MAX_UNDO_STACK_SIZE) {
         undo_stack_.erase(undo_stack_.begin());
     }
 }

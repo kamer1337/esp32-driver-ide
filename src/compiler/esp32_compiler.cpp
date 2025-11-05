@@ -116,6 +116,17 @@ void ESP32Compiler::OutputMessage(const std::string& message, CompileStatus stat
     }
 }
 
+// Helper function to count consecutive backslashes before a position
+static size_t CountPrecedingBackslashes(const std::string& code, size_t pos) {
+    size_t count = 0;
+    size_t i = pos;
+    while (i > 0 && code[i - 1] == '\\') {
+        count++;
+        i--;
+    }
+    return count;
+}
+
 bool ESP32Compiler::CheckBracketBalance(const std::string& code) {
     int braces = 0;
     int brackets = 0;
@@ -157,14 +168,8 @@ bool ESP32Compiler::CheckBracketBalance(const std::string& code) {
         
         // Handle strings with proper escape sequence handling
         if (c == '"' && !in_char) {
-            // Count consecutive backslashes before the quote
-            size_t backslash_count = 0;
-            size_t j = i;
-            while (j > 0 && code[j - 1] == '\\') {
-                backslash_count++;
-                j--;
-            }
             // Quote is escaped only if odd number of backslashes precede it
+            size_t backslash_count = CountPrecedingBackslashes(code, i);
             if (backslash_count % 2 == 0) {
                 in_string = !in_string;
             }
@@ -173,14 +178,8 @@ bool ESP32Compiler::CheckBracketBalance(const std::string& code) {
         
         // Handle character literals with proper escape sequence handling
         if (c == '\'' && !in_string) {
-            // Count consecutive backslashes before the quote
-            size_t backslash_count = 0;
-            size_t j = i;
-            while (j > 0 && code[j - 1] == '\\') {
-                backslash_count++;
-                j--;
-            }
             // Quote is escaped only if odd number of backslashes precede it
+            size_t backslash_count = CountPrecedingBackslashes(code, i);
             if (backslash_count % 2 == 0) {
                 in_char = !in_char;
             }
