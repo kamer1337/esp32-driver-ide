@@ -27,6 +27,13 @@ std::string TextEditor::GetText() const {
 }
 
 void TextEditor::InsertText(const std::string& text, size_t position) {
+    // Validate input to prevent excessive memory usage
+    constexpr size_t MAX_CONTENT_SIZE = 10 * 1024 * 1024; // 10MB limit
+    if (current_state_.content.length() + text.length() > MAX_CONTENT_SIZE) {
+        // Silently reject or could throw exception/return error
+        return;
+    }
+    
     SaveState();
     if (position > current_state_.content.length()) {
         position = current_state_.content.length();
@@ -215,7 +222,8 @@ std::vector<TextEditor::CompletionItem> TextEditor::GetCompletionsAtCursor() con
     
     // Get current line text
     size_t current_line = GetCurrentLine();
-    if (current_line == 0 || current_line > GetLineCount()) {
+    // Fix: Line numbers are 0-indexed, so line 0 is valid. Check should be >= not >
+    if (current_line >= GetLineCount()) {
         return completions;
     }
     

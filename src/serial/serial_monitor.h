@@ -11,6 +11,14 @@ namespace esp32_ide {
  * @brief Serial monitor for ESP32 communication
  * 
  * Handles serial communication with ESP32 devices
+ * 
+ * @note Thread Safety: This class is NOT thread-safe. If multi-threaded
+ * serial reading is implemented in the future, proper synchronization
+ * (mutexes) must be added to protect shared data members, especially:
+ * - messages_
+ * - realtime_data_
+ * - memory_history_
+ * - connected_ flag
  */
 class SerialMonitor {
 public:

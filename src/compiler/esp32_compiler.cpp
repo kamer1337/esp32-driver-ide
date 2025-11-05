@@ -143,8 +143,8 @@ bool ESP32Compiler::CheckBracketBalance(const std::string& code) {
             continue;
         }
         
-        // Check for comment start
-        if (c == '/' && i + 1 < code.length()) {
+        // Check for comment start (only if not in string or char)
+        if (!in_string && !in_char && c == '/' && i + 1 < code.length()) {
             if (code[i + 1] == '/') {
                 in_line_comment = true;
                 continue;
@@ -155,17 +155,33 @@ bool ESP32Compiler::CheckBracketBalance(const std::string& code) {
             }
         }
         
-        // Handle strings
+        // Handle strings with proper escape sequence handling
         if (c == '"' && !in_char) {
-            if (i == 0 || code[i - 1] != '\\') {
+            // Count consecutive backslashes before the quote
+            size_t backslash_count = 0;
+            size_t j = i;
+            while (j > 0 && code[j - 1] == '\\') {
+                backslash_count++;
+                j--;
+            }
+            // Quote is escaped only if odd number of backslashes precede it
+            if (backslash_count % 2 == 0) {
                 in_string = !in_string;
             }
             continue;
         }
         
-        // Handle character literals
+        // Handle character literals with proper escape sequence handling
         if (c == '\'' && !in_string) {
-            if (i == 0 || code[i - 1] != '\\') {
+            // Count consecutive backslashes before the quote
+            size_t backslash_count = 0;
+            size_t j = i;
+            while (j > 0 && code[j - 1] == '\\') {
+                backslash_count++;
+                j--;
+            }
+            // Quote is escaped only if odd number of backslashes precede it
+            if (backslash_count % 2 == 0) {
                 in_char = !in_char;
             }
             continue;
