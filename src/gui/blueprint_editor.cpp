@@ -15,7 +15,7 @@ void Node::AddInputPin(const std::string& pin_name, PinType pin_type) {
     // The BlueprintEditor should manage pin ID generation
     // For now, we'll use a simple approach but this should be refactored
     // to use the editor's next_pin_id_
-    int pin_id = static_cast<int>(id * 1000 + input_pins.size());
+    int pin_id = static_cast<int>(id * BlueprintEditor::PIN_ID_MULTIPLIER + input_pins.size());
     input_pins.emplace_back(pin_id, pin_name, pin_type, id);
 }
 
@@ -24,7 +24,8 @@ void Node::AddOutputPin(const std::string& pin_name, PinType pin_type) {
     // The BlueprintEditor should manage pin ID generation
     // For now, we'll use a simple approach but this should be refactored
     // to use the editor's next_pin_id_
-    int pin_id = static_cast<int>(id * 1000 + 500 + output_pins.size());
+    int pin_id = static_cast<int>(id * BlueprintEditor::PIN_ID_MULTIPLIER + 
+                                   BlueprintEditor::OUTPUT_PIN_OFFSET + output_pins.size());
     output_pins.emplace_back(pin_id, pin_name, pin_type, id);
 }
 

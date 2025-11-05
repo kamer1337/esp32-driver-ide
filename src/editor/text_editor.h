@@ -71,6 +71,10 @@ public:
     std::vector<CompletionItem> GetCompletionsAtCursor() const;
     
 private:
+    // Configuration constants
+    static constexpr size_t MAX_CONTENT_SIZE = 10 * 1024 * 1024; // 10MB limit
+    static constexpr size_t MAX_UNDO_STACK_SIZE = 100;
+    
     struct EditorState {
         std::string content;
         size_t cursor_position;

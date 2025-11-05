@@ -28,9 +28,10 @@ std::string TextEditor::GetText() const {
 
 void TextEditor::InsertText(const std::string& text, size_t position) {
     // Validate input to prevent excessive memory usage
-    constexpr size_t MAX_CONTENT_SIZE = 10 * 1024 * 1024; // 10MB limit
     if (current_state_.content.length() + text.length() > MAX_CONTENT_SIZE) {
-        // Silently reject or could throw exception/return error
+        // Log or notify about the error - in a real implementation, this would
+        // trigger a user notification or error callback
+        // For now, silently reject to maintain existing API compatibility
         return;
     }
     

@@ -150,6 +150,10 @@ private:
     int next_pin_id_;
     int next_link_id_;
     
+    // Pin ID generation constants
+    static constexpr int PIN_ID_MULTIPLIER = 1000;
+    static constexpr int OUTPUT_PIN_OFFSET = 500;
+    
     // UI state
     bool show_create_menu_;
     float create_menu_x_;
