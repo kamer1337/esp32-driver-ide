@@ -78,7 +78,7 @@ ImGuiWindow::ImGuiWindow()
       compiler_(nullptr),
       serial_monitor_(nullptr),
       syntax_highlighter_(nullptr),
-      show_file_explorer_(true),
+      show_file_explorer_(false),
       show_properties_panel_(true),
       show_ai_assistant_(true),
       current_center_tab_(0),
