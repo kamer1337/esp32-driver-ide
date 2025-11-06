@@ -86,6 +86,10 @@ private:
     int cached_line_count_;
     bool line_count_dirty_;
     
+    // Recent files
+    std::vector<std::string> recent_files_;
+    static constexpr int MAX_RECENT_FILES = 10;
+    
     // USB/Serial state
     std::vector<std::string> available_ports_;
     int selected_port_index_;
@@ -170,6 +174,17 @@ private:
     int cursor_line_;                               // Current cursor line (for status bar)
     int cursor_column_;                             // Current cursor column (for status bar)
     
+    // Confirmation dialog state
+    bool show_confirmation_dialog_;                 // Show/hide confirmation dialog
+    std::string confirmation_message_;              // Confirmation dialog message
+    std::function<void()> confirmation_callback_;   // Callback on confirmation
+    
+    // Settings/Preferences state
+    bool show_settings_dialog_;                     // Show/hide settings dialog
+    int settings_tab_size_;                         // Tab size setting
+    bool settings_auto_indent_;                     // Auto-indent setting
+    std::string settings_theme_;                    // Color theme setting
+    
     // UI rendering methods
     void RenderMainMenuBar();
     void RenderToolbar();
@@ -189,6 +204,8 @@ private:
     void RenderDeviceSchematic();
     void RenderStatusBar();
     void RenderFindDialog();
+    void RenderConfirmationDialog();
+    void RenderSettingsDialog();
     
     // Helper methods
     void RefreshFileList();
@@ -218,6 +235,9 @@ private:
     void PerformAutoSave();
     int CountLines(const std::string& text) const;
     void FindInCurrentFile(const std::string& search_term);
+    void AddToRecentFiles(const std::string& filename);
+    void ExportConsoleLog();
+    void ExportGeneratedCode();
     
     // ImGui setup
     void SetupImGuiStyle();
