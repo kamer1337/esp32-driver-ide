@@ -159,6 +159,17 @@ private:
     // Syntax highlighting state
     bool enable_syntax_highlighting_;               // Enable/disable syntax highlighting
     
+    // New UI enhancement state
+    bool show_line_numbers_;                        // Show/hide line numbers in editor
+    bool auto_save_enabled_;                        // Enable/disable auto-save
+    float auto_save_interval_;                      // Auto-save interval in seconds
+    float last_auto_save_time_;                     // Last auto-save timestamp
+    std::string status_bar_message_;                // Status bar message
+    char find_buffer_[256];                         // Find dialog buffer
+    bool show_find_dialog_;                         // Show/hide find dialog
+    int cursor_line_;                               // Current cursor line (for status bar)
+    int cursor_column_;                             // Current cursor column (for status bar)
+    
     // UI rendering methods
     void RenderMainMenuBar();
     void RenderToolbar();
@@ -176,6 +187,8 @@ private:
     void RenderTerminalPanel();
     void RenderBoardListPanel();
     void RenderDeviceSchematic();
+    void RenderStatusBar();
+    void RenderFindDialog();
     
     // Helper methods
     void RefreshFileList();
@@ -200,6 +213,11 @@ private:
     void ExecuteTerminalCommand(const std::string& command);
     void RefreshBoardList();
     void RenderSyntaxHighlightedText(const std::string& code);
+    void HandleKeyboardShortcuts();
+    void UpdateCursorPosition();
+    void PerformAutoSave();
+    int CountLines(const std::string& text) const;
+    void FindInCurrentFile(const std::string& search_term);
     
     // ImGui setup
     void SetupImGuiStyle();

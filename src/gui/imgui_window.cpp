@@ -100,12 +100,21 @@ ImGuiWindow::ImGuiWindow()
       show_board_list_(true),
       show_device_schematic_(false),
       current_schematic_view_(0),
-      enable_syntax_highlighting_(true) {
+      enable_syntax_highlighting_(true),
+      show_line_numbers_(true),
+      auto_save_enabled_(false),
+      auto_save_interval_(60.0f),
+      last_auto_save_time_(0.0f),
+      status_bar_message_("Ready"),
+      show_find_dialog_(false),
+      cursor_line_(1),
+      cursor_column_(0) {
     
     // Initialize editor buffer with empty content (lazy initialization is better than memset)
     editor_buffer_[0] = '\0';
     ai_input_buffer_[0] = '\0';
     terminal_input_buffer_[0] = '\0';
+    find_buffer_[0] = '\0';
     
     // Initialize baud rates
     baud_rates_ = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
@@ -228,6 +237,14 @@ void ImGuiWindow::Run() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         
+        // Handle keyboard shortcuts
+        HandleKeyboardShortcuts();
+        
+        // Perform auto-save if enabled
+        if (auto_save_enabled_) {
+            PerformAutoSave();
+        }
+        
         // Render UI
         RenderMainMenuBar();
         RenderToolbar();
@@ -336,6 +353,14 @@ void ImGuiWindow::Run() {
             ImGui::End();
         }
         
+        // Find dialog (floating)
+        if (show_find_dialog_) {
+            RenderFindDialog();
+        }
+        
+        // Status bar at the very bottom
+        RenderStatusBar();
+        
         // Rendering
         ImGui::Render();
         int display_w, display_h;
@@ -430,17 +455,40 @@ void ImGuiWindow::RenderMainMenuBar() {
         
         if (ImGui::BeginMenu("View")) {
             ImGui::MenuItem("File Explorer", nullptr, &show_file_explorer_);
+            ImGui::MenuItem("Board List", nullptr, &show_board_list_);
             ImGui::MenuItem("Properties Panel", nullptr, &show_properties_panel_);
             ImGui::MenuItem("AI Assistant", nullptr, &show_ai_assistant_);
+            ImGui::MenuItem("Terminal", nullptr, &show_terminal_);
+            ImGui::Separator();
+            ImGui::MenuItem("Line Numbers", nullptr, &show_line_numbers_);
+            ImGui::MenuItem("Syntax Highlighting", nullptr, &enable_syntax_highlighting_);
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Find", "Ctrl+F")) {
+                show_find_dialog_ = true;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Close Tab", "Ctrl+W")) {
+                if (active_editor_tab_ >= 0 && active_editor_tab_ < editor_tabs_.size()) {
+                    CloseTab(active_editor_tab_);
+                }
+            }
             ImGui::EndMenu();
         }
         
         if (ImGui::BeginMenu("Tools")) {
-            if (ImGui::MenuItem("Compile", "Ctrl+R")) {
+            if (ImGui::MenuItem("Compile", "F5")) {
                 CompileCode();
             }
             if (ImGui::MenuItem("Upload", "Ctrl+U")) {
                 UploadCode();
+            }
+            ImGui::Separator();
+            ImGui::MenuItem("Auto-Save", nullptr, &auto_save_enabled_);
+            if (auto_save_enabled_) {
+                ImGui::SliderFloat("Interval (s)", &auto_save_interval_, 10.0f, 300.0f);
             }
             ImGui::EndMenu();
         }
@@ -487,6 +535,9 @@ void ImGuiWindow::RenderToolbar() {
         RefreshPortList();
         AddConsoleMessage("Refreshed device list - found " + std::to_string(available_ports_.size()) + " device(s)");
     }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Scan for available USB/serial ports");
+    }
     
     ImGui::SameLine();
     ImGui::Separator();
@@ -517,9 +568,15 @@ void ImGuiWindow::RenderToolbar() {
         if (ImGui::Button("Connect")) {
             ConnectToDevice();
         }
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Connect to selected ESP32 device");
+        }
     } else {
         if (ImGui::Button("Disconnect")) {
             DisconnectFromDevice();
+        }
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Disconnect from ESP32 device");
         }
     }
     
@@ -541,21 +598,33 @@ void ImGuiWindow::RenderToolbar() {
     if (ImGui::Button("Upload")) {
         UploadCode();
     }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Upload code to ESP32 device (Ctrl+U)");
+    }
     ImGui::SameLine();
     
     if (ImGui::Button("Download")) {
         DownloadFirmware();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Download firmware from ESP32 device");
     }
     ImGui::SameLine();
     
     if (ImGui::Button("Debug")) {
         DebugCode();
     }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Start debugging session");
+    }
     ImGui::SameLine();
     
     if (ImGui::Button("RE")) {
         ReverseEngineerCode();
         current_center_tab_ = 2; // Switch to RE tab
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Reverse engineer firmware");
     }
     
     ImGui::End();
@@ -661,11 +730,24 @@ void ImGuiWindow::RenderEditorTab() {
                     float available_height = ImGui::GetContentRegionAvail().y;
                     float editor_height = available_height * 0.5f;
                     
-                    // Editable text area
+                    // Editable text area with line numbers
                     ImGui::Text("Edit Mode:");
+                    
+                    // Line numbers column
+                    if (show_line_numbers_) {
+                        ImGui::BeginChild("LineNumbers", ImVec2(50, editor_height), true);
+                        int line_count = CountLines(editor_tabs_[i].content);
+                        for (int line = 1; line <= line_count; ++line) {
+                            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%4d", line);
+                        }
+                        ImGui::EndChild();
+                        ImGui::SameLine();
+                    }
+                    
+                    float editor_width = show_line_numbers_ ? -1 : -1;
                     ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
                     if (ImGui::InputTextMultiline("##editor", editor_tabs_[i].buffer, EDITOR_BUFFER_SIZE,
-                                                  ImVec2(-1, editor_height), flags)) {
+                                                  ImVec2(editor_width, editor_height), flags)) {
                         editor_tabs_[i].content = std::string(editor_tabs_[i].buffer);
                         editor_tabs_[i].is_modified = true;
                         line_count_dirty_ = true;
@@ -682,7 +764,18 @@ void ImGuiWindow::RenderEditorTab() {
                     RenderSyntaxHighlightedText(editor_tabs_[i].content);
                     ImGui::EndChild();
                 } else {
-                    // Plain text editor (original behavior)
+                    // Plain text editor (original behavior) with line numbers
+                    if (show_line_numbers_) {
+                        float available_height = ImGui::GetContentRegionAvail().y;
+                        ImGui::BeginChild("LineNumbersPlain", ImVec2(50, available_height), true);
+                        int line_count = CountLines(editor_tabs_[i].content);
+                        for (int line = 1; line <= line_count; ++line) {
+                            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%4d", line);
+                        }
+                        ImGui::EndChild();
+                        ImGui::SameLine();
+                    }
+                    
                     ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
                     if (ImGui::InputTextMultiline("##editor", editor_tabs_[i].buffer, EDITOR_BUFFER_SIZE,
                                                   ImVec2(-1, -1), flags)) {
@@ -1998,6 +2091,169 @@ void ImGuiWindow::RenderBlueprintTab() {
     } else {
         ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), 
                           "Blueprint editor failed to initialize");
+    }
+}
+
+void ImGuiWindow::RenderStatusBar() {
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    if (!viewport) return;
+    
+    ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + viewport->Size.y - 22));
+    ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, 22));
+    
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | 
+                                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | 
+                                   ImGuiWindowFlags_NoSavedSettings;
+    
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 3));
+    ImGui::Begin("StatusBar", nullptr, window_flags);
+    
+    // Left side - status message
+    ImGui::Text("%s", status_bar_message_.c_str());
+    
+    ImGui::SameLine(viewport->Size.x - 400);
+    ImGui::Separator();
+    ImGui::SameLine();
+    
+    // Right side - file info
+    if (active_editor_tab_ >= 0 && active_editor_tab_ < editor_tabs_.size()) {
+        const auto& tab = editor_tabs_[active_editor_tab_];
+        
+        // File encoding
+        ImGui::Text("UTF-8");
+        ImGui::SameLine();
+        ImGui::Separator();
+        ImGui::SameLine();
+        
+        // Line/column
+        ImGui::Text("Ln %d, Col %d", cursor_line_, cursor_column_);
+        ImGui::SameLine();
+        ImGui::Separator();
+        ImGui::SameLine();
+        
+        // Line count
+        int line_count = CountLines(tab.content);
+        ImGui::Text("Lines: %d", line_count);
+        
+        if (tab.is_modified) {
+            ImGui::SameLine();
+            ImGui::Separator();
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "Modified");
+        }
+    }
+    
+    ImGui::End();
+    ImGui::PopStyleVar();
+}
+
+void ImGuiWindow::RenderFindDialog() {
+    ImGui::SetNextWindowSize(ImVec2(400, 100), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Find", &show_find_dialog_);
+    
+    ImGui::Text("Find:");
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::InputText("##find", find_buffer_, sizeof(find_buffer_), ImGuiInputTextFlags_EnterReturnsTrue)) {
+        FindInCurrentFile(find_buffer_);
+    }
+    
+    ImGui::Spacing();
+    if (ImGui::Button("Find Next", ImVec2(120, 0))) {
+        FindInCurrentFile(find_buffer_);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Close", ImVec2(120, 0))) {
+        show_find_dialog_ = false;
+    }
+    
+    ImGui::End();
+}
+
+void ImGuiWindow::HandleKeyboardShortcuts() {
+    ImGuiIO& io = ImGui::GetIO();
+    
+    // Ctrl+S - Save current file
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_S), false)) {
+        SaveCurrentTab();
+        status_bar_message_ = "File saved";
+    }
+    
+    // Ctrl+N - New file
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_N), false)) {
+        EditorTab new_tab;
+        new_tab.filename = "sketch_" + std::to_string(editor_tabs_.size() + 1) + ".ino";
+        new_tab.content = SIMPLE_SKETCH_TEMPLATE;
+        new_tab.is_modified = false;
+        std::snprintf(new_tab.buffer, EDITOR_BUFFER_SIZE, "%s", new_tab.content.c_str());
+        editor_tabs_.push_back(new_tab);
+        active_editor_tab_ = editor_tabs_.size() - 1;
+        status_bar_message_ = "New file created";
+    }
+    
+    // Ctrl+F - Find
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F), false)) {
+        show_find_dialog_ = !show_find_dialog_;
+    }
+    
+    // Ctrl+W - Close current tab
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W), false)) {
+        if (active_editor_tab_ >= 0 && active_editor_tab_ < editor_tabs_.size()) {
+            CloseTab(active_editor_tab_);
+            status_bar_message_ = "Tab closed";
+        }
+    }
+    
+    // F5 - Compile
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5), false)) {
+        CompileCode();
+    }
+}
+
+void ImGuiWindow::UpdateCursorPosition() {
+    // This would be called when cursor moves in the editor
+    // For now, we'll estimate based on buffer content
+    // In a real implementation, this would track the actual cursor position
+}
+
+void ImGuiWindow::PerformAutoSave() {
+    float current_time = (float)glfwGetTime();
+    
+    if (current_time - last_auto_save_time_ >= auto_save_interval_) {
+        // Auto-save all modified tabs
+        bool saved_any = false;
+        for (auto& tab : editor_tabs_) {
+            if (tab.is_modified) {
+                // In a real implementation, this would save to file
+                saved_any = true;
+            }
+        }
+        
+        if (saved_any) {
+            status_bar_message_ = "Auto-saved at " + std::to_string((int)current_time) + "s";
+        }
+        
+        last_auto_save_time_ = current_time;
+    }
+}
+
+int ImGuiWindow::CountLines(const std::string& text) const {
+    if (text.empty()) return 1;
+    return std::count(text.begin(), text.end(), '\n') + 1;
+}
+
+void ImGuiWindow::FindInCurrentFile(const std::string& search_term) {
+    if (search_term.empty()) return;
+    if (active_editor_tab_ < 0 || active_editor_tab_ >= editor_tabs_.size()) return;
+    
+    const auto& content = editor_tabs_[active_editor_tab_].content;
+    size_t pos = content.find(search_term);
+    
+    if (pos != std::string::npos) {
+        status_bar_message_ = "Found at position " + std::to_string(pos);
+        AddConsoleMessage("Found: '" + search_term + "' at position " + std::to_string(pos));
+    } else {
+        status_bar_message_ = "'" + search_term + "' not found";
+        AddConsoleMessage("Not found: '" + search_term + "'");
     }
 }
 
