@@ -86,6 +86,10 @@ private:
     int cached_line_count_;
     bool line_count_dirty_;
     
+    // Recent files
+    std::vector<std::string> recent_files_;
+    static constexpr int MAX_RECENT_FILES = 10;
+    
     // USB/Serial state
     std::vector<std::string> available_ports_;
     int selected_port_index_;
@@ -159,6 +163,33 @@ private:
     // Syntax highlighting state
     bool enable_syntax_highlighting_;               // Enable/disable syntax highlighting
     
+    // New UI enhancement state
+    bool show_line_numbers_;                        // Show/hide line numbers in editor
+    bool auto_save_enabled_;                        // Enable/disable auto-save
+    float auto_save_interval_;                      // Auto-save interval in seconds
+    float last_auto_save_time_;                     // Last auto-save timestamp
+    std::string status_bar_message_;                // Status bar message
+    char find_buffer_[256];                         // Find dialog buffer
+    bool show_find_dialog_;                         // Show/hide find dialog
+    int cursor_line_;                               // Current cursor line (for status bar)
+    int cursor_column_;                             // Current cursor column (for status bar)
+    
+    // Confirmation dialog state
+    bool show_confirmation_dialog_;                 // Show/hide confirmation dialog
+    std::string confirmation_message_;              // Confirmation dialog message
+    std::function<void()> confirmation_callback_;   // Callback on confirmation
+    
+    // Settings/Preferences state
+    bool show_settings_dialog_;                     // Show/hide settings dialog
+    int settings_tab_size_;                         // Tab size setting
+    bool settings_auto_indent_;                     // Auto-indent setting
+    std::string settings_theme_;                    // Color theme setting
+    
+    // Terminal autocomplete state
+    std::vector<std::string> terminal_commands_;    // Available commands for autocomplete
+    std::vector<std::string> terminal_suggestions_; // Current autocomplete suggestions
+    int terminal_selected_suggestion_;              // Currently selected suggestion
+    
     // UI rendering methods
     void RenderMainMenuBar();
     void RenderToolbar();
@@ -176,6 +207,10 @@ private:
     void RenderTerminalPanel();
     void RenderBoardListPanel();
     void RenderDeviceSchematic();
+    void RenderStatusBar();
+    void RenderFindDialog();
+    void RenderConfirmationDialog();
+    void RenderSettingsDialog();
     
     // Helper methods
     void RefreshFileList();
@@ -200,6 +235,14 @@ private:
     void ExecuteTerminalCommand(const std::string& command);
     void RefreshBoardList();
     void RenderSyntaxHighlightedText(const std::string& code);
+    void HandleKeyboardShortcuts();
+    void UpdateCursorPosition();
+    void PerformAutoSave();
+    int CountLines(const std::string& text) const;
+    void FindInCurrentFile(const std::string& search_term);
+    void AddToRecentFiles(const std::string& filename);
+    void ExportConsoleLog();
+    void ExportGeneratedCode();
     
     // ImGui setup
     void SetupImGuiStyle();
