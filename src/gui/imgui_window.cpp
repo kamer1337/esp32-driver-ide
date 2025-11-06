@@ -113,7 +113,8 @@ ImGuiWindow::ImGuiWindow()
       show_settings_dialog_(false),
       settings_tab_size_(4),
       settings_auto_indent_(true),
-      settings_theme_("Dark") {
+      settings_theme_("Dark"),
+      terminal_selected_suggestion_(-1) {
     
     // Initialize editor buffer with empty content (lazy initialization is better than memset)
     editor_buffer_[0] = '\0';
@@ -141,6 +142,9 @@ ImGuiWindow::ImGuiWindow()
     terminal_history_.push_back("ESP32 Driver IDE Terminal v1.0");
     terminal_history_.push_back("Type 'help' for available commands");
     terminal_history_.push_back("");
+    
+    // Initialize terminal commands for autocomplete
+    terminal_commands_ = {"help", "clear", "compile", "upload", "ports", "boards", "ls", "exit", "version"};
 }
 
 ImGuiWindow::~ImGuiWindow() {
@@ -1208,7 +1212,27 @@ void ImGuiWindow::RenderConsole() {
     ImGui::BeginChild("ConsoleScrolling", ImVec2(0, -30), false, ImGuiWindowFlags_HorizontalScrollbar);
     
     for (const auto& message : console_messages_) {
-        ImGui::TextWrapped("%s", message.c_str());
+        // Color code console messages
+        if (message.find("Error") != std::string::npos || 
+            message.find("error") != std::string::npos ||
+            message.find("failed") != std::string::npos ||
+            message.find("Failed") != std::string::npos) {
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", message.c_str());
+        } else if (message.find("Warning") != std::string::npos || 
+                   message.find("warning") != std::string::npos) {
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "%s", message.c_str());
+        } else if (message.find("Success") != std::string::npos || 
+                   message.find("success") != std::string::npos ||
+                   message.find("Complete") != std::string::npos ||
+                   message.find("✓") != std::string::npos) {
+            ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "%s", message.c_str());
+        } else if (message.find("Info") != std::string::npos || 
+                   message.find("Loading") != std::string::npos ||
+                   message.find("Loaded") != std::string::npos) {
+            ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "%s", message.c_str());
+        } else {
+            ImGui::TextWrapped("%s", message.c_str());
+        }
     }
     
     if (scroll_to_bottom_) {
@@ -1221,6 +1245,10 @@ void ImGuiWindow::RenderConsole() {
     ImGui::Separator();
     if (ImGui::Button("Clear Console")) {
         console_messages_.clear();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Export Log")) {
+        ExportConsoleLog();
     }
 }
 
@@ -1807,17 +1835,64 @@ void ImGuiWindow::RenderTerminalPanel() {
     }
     ImGui::EndChild();
     
-    // Command input
+    // Command input with autocomplete
     ImGui::PushItemWidth(-1);
-    if (ImGui::InputText("##terminal_input", terminal_input_buffer_, sizeof(terminal_input_buffer_), 
-                         ImGuiInputTextFlags_EnterReturnsTrue)) {
+    
+    // Check for autocomplete on input change
+    ImGuiInputTextFlags input_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackAlways;
+    
+    bool enter_pressed = ImGui::InputText("##terminal_input", terminal_input_buffer_, sizeof(terminal_input_buffer_), 
+                         input_flags, [](ImGuiInputTextCallbackData* data) -> int {
+        ImGuiWindow* window = (ImGuiWindow*)data->UserData;
+        if (window) {
+            // Update suggestions based on current input
+            std::string current_input(data->Buf, data->BufTextLen);
+            window->terminal_suggestions_.clear();
+            
+            if (!current_input.empty()) {
+                for (const auto& cmd : window->terminal_commands_) {
+                    if (cmd.find(current_input) == 0) {
+                        window->terminal_suggestions_.push_back(cmd);
+                    }
+                }
+            }
+        }
+        return 0;
+    }, this);
+    
+    if (enter_pressed) {
         std::string command(terminal_input_buffer_);
         if (!command.empty()) {
             ExecuteTerminalCommand(command);
             terminal_input_buffer_[0] = '\0';
             terminal_scroll_to_bottom_ = true;
+            terminal_suggestions_.clear();
         }
     }
+    
+    // Handle TAB for autocomplete
+    ImGuiIO& io = ImGui::GetIO();
+    if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab), false)) {
+        if (!terminal_suggestions_.empty()) {
+            // Use first suggestion
+            std::snprintf(terminal_input_buffer_, sizeof(terminal_input_buffer_), 
+                         "%s", terminal_suggestions_[0].c_str());
+        }
+    }
+    
+    // Show autocomplete suggestions
+    if (!terminal_suggestions_.empty() && ImGui::IsItemFocused()) {
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y - 
+                               (terminal_suggestions_.size() * ImGui::GetTextLineHeightWithSpacing()) - 5));
+        ImGui::BeginTooltip();
+        ImGui::Text("Suggestions (press TAB):");
+        ImGui::Separator();
+        for (const auto& suggestion : terminal_suggestions_) {
+            ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "  %s", suggestion.c_str());
+        }
+        ImGui::EndTooltip();
+    }
+    
     ImGui::PopItemWidth();
 }
 
@@ -1833,9 +1908,15 @@ void ImGuiWindow::ExecuteTerminalCommand(const std::string& command) {
         terminal_history_.push_back("  ports    - List available serial ports");
         terminal_history_.push_back("  boards   - List detected boards");
         terminal_history_.push_back("  ls       - List files in project");
-    } else if (command == "clear") {
+        terminal_history_.push_back("  version  - Show IDE version");
+        terminal_history_.push_back("  exit     - Clear terminal");
+    } else if (command == "clear" || command == "exit") {
         terminal_history_.clear();
         terminal_history_.push_back("Terminal cleared");
+    } else if (command == "version") {
+        terminal_history_.push_back("ESP32 Driver IDE v1.0.0");
+        terminal_history_.push_back("Built with ImGui + GLFW + OpenGL");
+        terminal_history_.push_back("Copyright 2025");
     } else if (command == "compile") {
         terminal_history_.push_back("Compiling code...");
         CompileCode();

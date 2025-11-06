@@ -185,6 +185,11 @@ private:
     bool settings_auto_indent_;                     // Auto-indent setting
     std::string settings_theme_;                    // Color theme setting
     
+    // Terminal autocomplete state
+    std::vector<std::string> terminal_commands_;    // Available commands for autocomplete
+    std::vector<std::string> terminal_suggestions_; // Current autocomplete suggestions
+    int terminal_selected_suggestion_;              // Currently selected suggestion
+    
     // UI rendering methods
     void RenderMainMenuBar();
     void RenderToolbar();
