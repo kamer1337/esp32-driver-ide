@@ -794,10 +794,10 @@ void ImGuiWindow::RenderEditorTab() {
                         ImGui::SameLine();
                     }
                     
-                    float editor_width = show_line_numbers_ ? -1 : -1;
+                    // Editor takes remaining width
                     ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
                     if (ImGui::InputTextMultiline("##editor", editor_tabs_[i].buffer, EDITOR_BUFFER_SIZE,
-                                                  ImVec2(editor_width, editor_height), flags)) {
+                                                  ImVec2(-1, editor_height), flags)) {
                         editor_tabs_[i].content = std::string(editor_tabs_[i].buffer);
                         editor_tabs_[i].is_modified = true;
                         line_count_dirty_ = true;
@@ -1872,11 +1872,13 @@ void ImGuiWindow::RenderTerminalPanel() {
     
     // Handle TAB for autocomplete
     ImGuiIO& io = ImGui::GetIO();
-    if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab), false)) {
+    if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Tab, false)) {
         if (!terminal_suggestions_.empty()) {
-            // Use first suggestion
-            std::snprintf(terminal_input_buffer_, sizeof(terminal_input_buffer_), 
-                         "%s", terminal_suggestions_[0].c_str());
+            // Use first suggestion with length check
+            size_t copy_len = std::min(terminal_suggestions_[0].length(), 
+                                      sizeof(terminal_input_buffer_) - 1);
+            strncpy(terminal_input_buffer_, terminal_suggestions_[0].c_str(), copy_len);
+            terminal_input_buffer_[copy_len] = '\0';
         }
     }
     
@@ -2396,8 +2398,9 @@ void ImGuiWindow::RenderSettingsDialog() {
             if (auto_save_enabled_) {
                 ImGui::Spacing();
                 ImGui::SliderFloat("Interval (seconds)", &auto_save_interval_, 10.0f, 300.0f);
-                ImGui::Text("Next auto-save in: %.0f seconds", 
-                           auto_save_interval_ - ((float)glfwGetTime() - last_auto_save_time_));
+                float time_until_next = auto_save_interval_ - ((float)glfwGetTime() - last_auto_save_time_);
+                if (time_until_next < 0) time_until_next = 0;
+                ImGui::Text("Next auto-save in: %.0f seconds", time_until_next);
             }
             
             ImGui::EndTabItem();
@@ -2442,13 +2445,13 @@ void ImGuiWindow::HandleKeyboardShortcuts() {
     ImGuiIO& io = ImGui::GetIO();
     
     // Ctrl+S - Save current file
-    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_S), false)) {
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
         SaveCurrentTab();
         status_bar_message_ = "File saved";
     }
     
     // Ctrl+N - New file
-    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_N), false)) {
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_N, false)) {
         EditorTab new_tab;
         new_tab.filename = "sketch_" + std::to_string(editor_tabs_.size() + 1) + ".ino";
         new_tab.content = SIMPLE_SKETCH_TEMPLATE;
@@ -2460,12 +2463,12 @@ void ImGuiWindow::HandleKeyboardShortcuts() {
     }
     
     // Ctrl+F - Find
-    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F), false)) {
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
         show_find_dialog_ = !show_find_dialog_;
     }
     
     // Ctrl+W - Close current tab
-    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W), false)) {
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_W, false)) {
         if (active_editor_tab_ >= 0 && active_editor_tab_ < editor_tabs_.size()) {
             CloseTab(active_editor_tab_);
             status_bar_message_ = "Tab closed";
@@ -2473,15 +2476,17 @@ void ImGuiWindow::HandleKeyboardShortcuts() {
     }
     
     // F5 - Compile
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5), false)) {
+    if (ImGui::IsKeyPressed(ImGuiKey_F5, false)) {
         CompileCode();
     }
 }
 
 void ImGuiWindow::UpdateCursorPosition() {
-    // This would be called when cursor moves in the editor
-    // For now, we'll estimate based on buffer content
-    // In a real implementation, this would track the actual cursor position
+    // This is called to update cursor position in the editor
+    // The actual cursor position tracking would need deeper integration
+    // with the text input widget, which ImGui doesn't directly expose
+    // For now, this is a placeholder that could be enhanced with
+    // custom text editor implementation or ImGui::InputTextMultiline callbacks
 }
 
 void ImGuiWindow::PerformAutoSave() {
@@ -2543,7 +2548,12 @@ void ImGuiWindow::AddToRecentFiles(const std::string& filename) {
 }
 
 void ImGuiWindow::ExportConsoleLog() {
-    std::string log_filename = "console_log_" + std::to_string(time(nullptr)) + ".txt";
+    // Generate timestamp
+    time_t now = time(nullptr);
+    char timestamp[32];
+    strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", localtime(&now));
+    
+    std::string log_filename = "console_log_" + std::string(timestamp) + ".txt";
     
     // In a real implementation, this would write to a file
     std::string log_content;
