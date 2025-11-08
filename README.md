@@ -1,63 +1,29 @@
 # ESP32 Driver IDE (C++ Version)
 
-A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **professional ImGui-based graphical interface**.
+A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **terminal-based interface with no external GUI dependencies**.
 
-![ESP32 Driver IDE](https://github.com/user-attachments/assets/18511046-9c87-48ff-a377-960e97afd9f3)
+## ✨ Latest Update: Pure C++ Terminal Interface (November 2025)
 
-## ✨ Latest Update: Advanced IDE Features (November 2025)
+**🎨 Zero External Dependencies**: Complete reimplementation using pure C++ with terminal-based UI!
 
-**🎨 Professional IDE Experience**: Complete IDE features including integrated terminal, board management, device schematics, advanced syntax highlighting, and **blueprint node editor**!
+**🚀 Lightweight & Fast**: No GUI frameworks, no OpenGL, no external libraries - just pure C++!
 
-**🔷 Blueprint Node Editor**: Visual node-based editor for designing ESP32 hardware connections and component interactions!
+**💻 Terminal Interface**: Interactive menu system with ANSI color support for enhanced usability!
 
-**📋 Board Management**: Scan and manage multiple ESP32 boards with detailed information and device pinout diagrams!
+**📦 Easy Build**: Single command build with no external dependencies to install!
 
-**🎨 Syntax Highlighting**: Beautiful color-coded syntax highlighting with split-view editor!
+## Features
 
-📖 **[Read the New Features Guide](NEW_FEATURES.md)**
+### Terminal-Based Interface
+- **Interactive Menu System**: Easy-to-use text-based interface
+- **Color-Coded Output**: ANSI escape codes for visual feedback
+- **File Browser**: Browse and open project files
+- **Text Editor**: View and edit code with line numbers
+- **Console Output**: View compilation and runtime messages
+- **Serial Monitor**: Connect and communicate with ESP32 devices
 
-### Latest Advanced Capabilities (November 2025)
+### Core Functionality
 
-#### Blueprint Node Editor (NEW!)
-- **Visual Design**: Node-based interface for hardware component design
-- **ESP32 Components**: Pre-built nodes for GPIO, I2C, SPI, UART, ADC, DAC, PWM, and more
-- **Pin Visualization**: Color-coded pins showing input/output/bidirectional connections
-- **Interactive Connections**: Click and drag to create connections between component pins
-- **Code Generation**: Automatically generate Arduino/ESP32 code from visual design
-- **Component Library**: LED, Button, Sensor, Motor, Display nodes and more
-- **Context Menu**: Right-click to add new components to your design
-
-#### Integrated Terminal
-- **Command-Line Interface**: Built-in terminal for executing commands
-- **Color-Coded Output**: Error, warning, and success message highlighting
-- **Built-in Commands**: compile, upload, ports, boards, ls, help, and more
-- **Command History**: Track all executed commands
-
-#### Board Management
-- **Device Detection**: Automatically scan for connected ESP32 boards
-- **Board Information**: View chip type, flash size, RAM, and port details
-- **Multi-Board Support**: Manage multiple boards simultaneously
-- **Connection Status**: Visual indicators for connected devices
-
-#### Device Schematic Viewer
-- **Pinout Diagram**: Complete ESP32 GPIO pinout with alternate functions
-- **Block Diagram**: System architecture overview
-- **Floating Window**: Convenient reference while coding
-- **Multiple Views**: Switch between pinout and architecture views
-
-#### Advanced Syntax Highlighting
-- **Split-View Editor**: Edit mode with live preview
-- **Color-Coded Syntax**: Keywords, types, functions, strings, comments
-- **Real-Time Preview**: See highlighted code as you type
-- **Toggle On/Off**: Switch between plain and highlighted modes
-
-#### Enhanced UI Panels
-- **Templates Panel**: Browse and insert code templates
-- **Completion Panel**: One-click function insertion
-- **Board List Panel**: Manage connected devices
-- **Dual Bottom Panels**: Console and Terminal side-by-side
-
-### Previous Advanced Capabilities
 
 #### AI-Powered Features
 - **Code Refactoring**: Automatic code optimization and readability improvements
@@ -95,48 +61,29 @@ The IDE features a complete ImGui-based GUI with:
 ### 🔧 Code Editor
 - **Syntax Highlighting**: Full C/C++ syntax highlighting optimized for ESP32/Arduino code
 - **Undo/Redo**: Complete undo/redo functionality
-- **Multiple Files**: Support for managing multiple source files in tabs
+- **Multiple Files**: Support for managing multiple source files
 - **Code Search**: Find and replace functionality
 - **Line Management**: Line-based operations and navigation
 - **Hierarchical File Tree**: Folder-subfolder-file.ino structure
-- **Breakpoint Support**: Visual breakpoint indicators on code lines
-- **Code Completion**: Smart suggestions as you type
 
-### 🤖 AI Assistant (Enhanced!)
+### 🤖 AI Assistant
 - **Integrated Chat**: Ask questions about ESP32 APIs, debugging, and best practices
 - **Code Generation**: Generate complete working code for LED, WiFi, Bluetooth, sensors, and more
-- **Direct Code Insertion**: Insert generated code into editor with one click
 - **Code Analysis**: Get suggestions and improvements for your code
-- **AI Refactoring**: Automatic code optimization and readability improvements
-- **Bug Detection**: Detects and auto-fixes common ESP32 bugs
-- **Smart Completion**: Context-aware code completion suggestions
-- **Code Templates**: 5+ built-in templates (LED, WiFi, sensors, web server)
 - **Context-Aware**: Understands ESP32-specific development challenges
 - **Error Suggestions**: Provides fixes for common errors
-
-### 🔍 Professional Debugging
-- **Live Data Monitoring**: Stream real-time data from connected ESP32 devices
-- **Breakpoint Support**: Set/remove breakpoints on any line
-- **Variable Watch**: Add variables to watch list for real-time monitoring
-- **Memory Profiling**: Track heap usage, fragmentation, and memory warnings
-- **Performance Analysis**: Get code performance scores (0-100) with suggestions
-- **Color-Coded Output**: Red for errors, yellow for warnings, green for success
-- **Device Validation**: Ensures USB connection before debugging operations
 
 ### ⚙️ ESP32 Development Tools
 - **Compile**: Syntax checking and compilation
 - **Upload**: Code uploading to ESP32 devices
-- **Download**: Firmware extraction from connected devices
 - **Board Selection**: Support for multiple ESP32 variants (ESP32, S2, S3, C3)
 - **Serial Monitor**: Real-time serial communication with data streaming
 
 ### 📁 File Management
 - **Create/Open/Save Files**: Complete file management
-- **Folder Structure**: Hierarchical file tree with folders and subfolders
-- **Multiple Tabs**: Open multiple files simultaneously in separate tabs
+- **Multiple Files**: Manage multiple source files
 - **Project Support**: Load and save entire projects
-- **Modified Tracking**: Visual indicators for unsaved changes
-- **File Switching**: Quick navigation between files
+- **File Browser**: Interactive file navigation
 
 ## Building from Source
 
@@ -145,7 +92,7 @@ The IDE features a complete ImGui-based GUI with:
 #### Linux (Ubuntu/Debian)
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+sudo apt-get install build-essential cmake g++
 ```
 
 #### macOS
@@ -167,9 +114,6 @@ brew install cmake
 # Clone the repository
 git clone https://github.com/kamer1337/esp32-driver-ide.git
 cd esp32-driver-ide
-
-# Initialize and update submodules (includes glfw3)
-git submodule update --init --recursive
 
 # Create build directory
 mkdir build

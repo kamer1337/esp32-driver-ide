@@ -5,10 +5,7 @@
 ### Linux (Ubuntu/Debian)
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake g++ libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
-
-# Optional: For GTK GUI support
-sudo apt-get install libgtk-3-dev
+sudo apt-get install build-essential cmake g++
 ```
 
 ### macOS
@@ -32,9 +29,6 @@ brew install cmake
 # Clone repository
 git clone https://github.com/kamer1337/esp32-driver-ide.git
 cd esp32-driver-ide
-
-# Initialize and update submodules (includes glfw3)
-git submodule update --init --recursive
 
 # Create build directory
 mkdir build
@@ -69,13 +63,21 @@ cmake --build .
 
 ## Usage
 
-### Command Line Interface
+### Terminal Interface
 
-The current build provides a demonstration of all features through the console:
+The IDE provides an interactive terminal-based interface:
 
 ```bash
 ./esp32-driver-ide
 ```
+
+Features:
+- **Main Menu**: Access all IDE functions
+- **File Browser**: Navigate and open files
+- **Editor**: View and edit code with line numbers
+- **Compiler**: Compile and upload code
+- **Serial Monitor**: Communicate with ESP32 devices
+- **Console**: View output and messages
 
 ### API Usage Examples
 
@@ -154,46 +156,6 @@ auto messages = serial->GetMessages();
 for (const auto& msg : messages) {
     std::cout << msg.content << "\n";
 }
-```
-
-## Adding GUI Support
-
-### Option 1: Platform-Native (Recommended for Production)
-
-#### Linux (GTK+3)
-```bash
-sudo apt-get install libgtk-3-dev
-# Rebuild with GUI support
-```
-
-#### Windows (Win32 API)
-Uncomment the Win32 section in CMakeLists.txt and implement platform-specific window code.
-
-#### macOS (Cocoa)
-Uncomment the Cocoa section in CMakeLists.txt and implement platform-specific window code.
-
-### Option 2: Cross-Platform Framework
-
-#### Qt (Recommended for Cross-Platform)
-```bash
-# Install Qt
-sudo apt-get install qt5-default  # Linux
-brew install qt  # macOS
-
-# Update CMakeLists.txt to use Qt
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
-target_link_libraries(esp32-driver-ide PRIVATE Qt5::Widgets)
-```
-
-#### wxWidgets
-```bash
-# Install wxWidgets
-sudo apt-get install libwxgtk3.0-dev  # Linux
-brew install wxwidgets  # macOS
-
-# Update CMakeLists.txt to use wxWidgets
-find_package(wxWidgets REQUIRED)
-target_link_libraries(esp32-driver-ide PRIVATE ${wxWidgets_LIBRARIES})
 ```
 
 ## Extending the IDE
