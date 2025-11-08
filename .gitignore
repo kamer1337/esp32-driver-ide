@@ -34,3 +34,6 @@ Makefile
 *.exe
 esp32-driver-ide
 _codeql_build_dir/
+
+# External dependencies (removed)
+external/

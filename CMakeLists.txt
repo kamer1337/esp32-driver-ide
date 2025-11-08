@@ -7,40 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Options
 option(BUILD_TESTS "Build test programs" OFF)
 
-# Find required packages for ImGui
-find_package(OpenGL REQUIRED)
-
-# GLFW options - disable unnecessary features
-option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
-option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
-option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
-option(GLFW_INSTALL "Generate installation target" OFF)
-option(GLFW_BUILD_WAYLAND "Build support for Wayland" OFF)
-option(GLFW_BUILD_X11 "Build support for X11" ON)
-
-# Add GLFW subdirectory
-add_subdirectory(external/glfw)
-
-# ImGui source files
-set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui)
-set(IMGUI_SOURCES
-    ${IMGUI_DIR}/imgui.cpp
-    ${IMGUI_DIR}/imgui_draw.cpp
-    ${IMGUI_DIR}/imgui_tables.cpp
-    ${IMGUI_DIR}/imgui_widgets.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
-)
-
-# ImGui Node Editor source files
-set(IMGUI_NODE_EDITOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui-node-editor)
-set(IMGUI_NODE_EDITOR_SOURCES
-    ${IMGUI_NODE_EDITOR_DIR}/imgui_node_editor.cpp
-    ${IMGUI_NODE_EDITOR_DIR}/imgui_node_editor_api.cpp
-    ${IMGUI_NODE_EDITOR_DIR}/imgui_canvas.cpp
-    ${IMGUI_NODE_EDITOR_DIR}/crude_json.cpp
-)
-
 # Source files
 set(SOURCES
     src/main.cpp
@@ -52,11 +18,8 @@ set(SOURCES
     src/serial/serial_monitor.cpp
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
-    src/gui/imgui_window.cpp
-    src/gui/blueprint_editor.cpp
+    src/gui/terminal_window.cpp
     src/utils/string_utils.cpp
-    ${IMGUI_SOURCES}
-    ${IMGUI_NODE_EDITOR_SOURCES}
 )
 
 # Header files
@@ -69,8 +32,7 @@ set(HEADERS
     src/serial/serial_monitor.h
     src/gui/main_window.h
     src/gui/console_widget.h
-    src/gui/imgui_window.h
-    src/gui/blueprint_editor.h
+    src/gui/terminal_window.h
     src/utils/string_utils.h
 )
 
@@ -93,17 +55,6 @@ add_executable(esp32-driver-ide-demo
 # Include directories
 target_include_directories(esp32-driver-ide PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${IMGUI_DIR}
-    ${IMGUI_DIR}/backends
-    ${IMGUI_NODE_EDITOR_DIR}
-    ${OPENGL_INCLUDE_DIR}
-)
-
-# Link libraries
-target_link_libraries(esp32-driver-ide PRIVATE
-    glfw
-    ${OPENGL_LIBRARIES}
-    ${CMAKE_DL_LIBS}
 )
 
 target_include_directories(esp32-driver-ide-demo PRIVATE
@@ -114,30 +65,12 @@ target_include_directories(esp32-driver-ide-demo PRIVATE
 if(WIN32)
     # Windows-specific settings
     target_compile_definitions(esp32-driver-ide PRIVATE PLATFORM_WINDOWS)
-    # Link against Windows GUI libraries (optional - comment out for console build)
-    # target_link_libraries(esp32-driver-ide PRIVATE gdi32 user32 comctl32 comdlg32)
-    # set_target_properties(esp32-driver-ide PROPERTIES WIN32_EXECUTABLE TRUE)
 elseif(APPLE)
     # macOS-specific settings
     target_compile_definitions(esp32-driver-ide PRIVATE PLATFORM_MACOS)
-    # find_library(COCOA_LIBRARY Cocoa)
-    # target_link_libraries(esp32-driver-ide PRIVATE ${COCOA_LIBRARY})
 elseif(UNIX)
     # Linux-specific settings
     target_compile_definitions(esp32-driver-ide PRIVATE PLATFORM_LINUX)
-    # GTK+3 is optional - for full GUI support, install: sudo apt-get install libgtk-3-dev
-    find_package(PkgConfig)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(GTK3 gtk+-3.0)
-        if(GTK3_FOUND)
-            message(STATUS "GTK+3 found - GUI support enabled")
-            target_include_directories(esp32-driver-ide PRIVATE ${GTK3_INCLUDE_DIRS})
-            target_link_libraries(esp32-driver-ide PRIVATE ${GTK3_LIBRARIES})
-            target_compile_definitions(esp32-driver-ide PRIVATE HAS_GTK3)
-        else()
-            message(STATUS "GTK+3 not found - building console-only version")
-        endif()
-    endif()
 endif()
 
 # Install rules

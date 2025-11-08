@@ -1,6 +1,1 @@
-[submodule "external/glfw"]
-	path = external/glfw
-	url = https://github.com/glfw/glfw.git
-[submodule "external/imgui-node-editor"]
-	path = external/imgui-node-editor
-	url = https://github.com/thedmd/imgui-node-editor.git
+# No external GUI dependencies
