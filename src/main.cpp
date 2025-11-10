@@ -1,4 +1,7 @@
 #include "gui/terminal_window.h"
+#ifdef USE_SIMPLE_GUI
+#include "gui/simple_gui_window.h"
+#endif
 #include "editor/text_editor.h"
 #include "editor/syntax_highlighter.h"
 #include "file_manager/file_manager.h"
@@ -8,7 +11,11 @@
 #include <memory>
 
 int main(int argc, char* argv[]) {
+#ifdef USE_SIMPLE_GUI
+    std::cout << "Starting ESP32 Driver IDE (Simple GUI Version)...\n\n";
+#else
     std::cout << "Starting ESP32 Driver IDE (Terminal Version)...\n\n";
+#endif
     
     try {
         // Create backend components
@@ -21,27 +28,38 @@ int main(int argc, char* argv[]) {
         // Create default sketch
         file_manager->CreateFile("sketch.ino", esp32_ide::FileManager::GetDefaultSketch());
         
+#ifdef USE_SIMPLE_GUI
+        // Create simple GUI window
+        auto window = std::make_unique<esp32_ide::gui::SimpleGuiWindow>();
+        
+        // Initialize window
+        if (!window->Initialize(1024, 768)) {
+            std::cerr << "Failed to initialize simple GUI window\n";
+            return 1;
+        }
+#else
         // Create terminal window
-        auto terminal_window = std::make_unique<esp32_ide::gui::TerminalWindow>();
+        auto window = std::make_unique<esp32_ide::gui::TerminalWindow>();
         
         // Initialize terminal window
-        if (!terminal_window->Initialize(80, 24)) {
+        if (!window->Initialize(80, 24)) {
             std::cerr << "Failed to initialize terminal window\n";
             return 1;
         }
+#endif
         
         // Connect backend components to UI
-        terminal_window->SetTextEditor(text_editor.get());
-        terminal_window->SetFileManager(file_manager.get());
-        terminal_window->SetCompiler(compiler.get());
-        terminal_window->SetSerialMonitor(serial_monitor.get());
-        terminal_window->SetSyntaxHighlighter(syntax_highlighter.get());
+        window->SetTextEditor(text_editor.get());
+        window->SetFileManager(file_manager.get());
+        window->SetCompiler(compiler.get());
+        window->SetSerialMonitor(serial_monitor.get());
+        window->SetSyntaxHighlighter(syntax_highlighter.get());
         
         // Run the application
-        terminal_window->Run();
+        window->Run();
         
         // Cleanup
-        terminal_window->Shutdown();
+        window->Shutdown();
         
         return 0;
         
