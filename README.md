@@ -2,25 +2,36 @@
 
 A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **terminal-based interface with no external GUI dependencies**.
 
-## ✨ Latest Update: Pure C++ Terminal Interface (November 2025)
+## ✨ Latest Update: Pure C++ with Custom GUI Option (November 2025)
 
-**🎨 Zero External Dependencies**: Complete reimplementation using pure C++ with terminal-based UI!
+**🎨 Zero External Dependencies**: Complete reimplementation with pure C++ and optional lightweight native GUI!
 
-**🚀 Lightweight & Fast**: No GUI frameworks, no OpenGL, no external libraries - just pure C++!
+**🚀 Lightweight & Fast**: No ImGui, no GLFW, no OpenGL - just platform-native APIs!
 
-**💻 Terminal Interface**: Interactive menu system with ANSI color support for enhanced usability!
+**💻 Two Interface Options**: 
+1. **Terminal Interface** (Default): Interactive menu system with ANSI color support
+2. **Simple GUI** (Optional): Lightweight native GUI using X11 (Linux) or Win32 (Windows)
 
 **📦 Easy Build**: Single command build with no external dependencies to install!
 
 ## Features
 
-### Terminal-Based Interface
+### Interface Options
+
+#### Terminal-Based Interface (Default)
 - **Interactive Menu System**: Easy-to-use text-based interface
 - **Color-Coded Output**: ANSI escape codes for visual feedback
 - **File Browser**: Browse and open project files
 - **Text Editor**: View and edit code with line numbers
 - **Console Output**: View compilation and runtime messages
 - **Serial Monitor**: Connect and communicate with ESP32 devices
+
+#### Simple GUI (Optional Build)
+- **Native Platform APIs**: X11 on Linux, Win32 on Windows
+- **Lightweight**: No external GUI frameworks required
+- **Dark Theme**: Professional appearance optimized for coding
+- **Multi-Panel Layout**: Menu bar, toolbar, editor, console, file list
+- **Interactive**: Mouse and keyboard support
 
 ### Core Functionality
 
@@ -36,25 +47,6 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 - **Variable Watch**: Monitor variables in real-time during execution
 - **Memory Profiling**: Track heap usage, fragmentation, and memory leaks
 - **Performance Analysis**: Get performance scores and optimization suggestions
-
-#### Previous Features
-- **Generate Code**: Ask AI to "Generate code for LED blink" and get working code instantly
-- **Insert Directly**: One-click code insertion into your active editor tab
-- **Live Debugging**: Start debugging to see real-time data from your connected device
-- **Variable Inspection**: Monitor heap memory, WiFi status, GPIO states, and more
-
-## ✨ ImGui Interface
-
-The IDE features a complete ImGui-based GUI with:
-- **Five-panel layout**: File/Board Explorer (left), Editor/Debugger/RE/Blueprint (center), Properties/Templates/Completion (right), AI Assistant (far right), Terminal (bottom)
-- **Professional toolbar**: USB port selector, Upload, Download, Debug, and Reverse Engineering buttons
-- **Multi-tab panels**: Switch between Files/Boards, Editor/Debugger/RE/Blueprint, Editor/Templates/Completion views
-- **Dual bottom panels**: Console output and integrated terminal
-- **Blueprint editor**: Visual node-based hardware design with component library
-- **Device schematic viewer**: Floating window with pinout and block diagrams
-- **Dark theme**: Professional appearance optimized for long coding sessions
-
-📖 **[Read the complete ImGui Interface Guide](IMGUI_GUIDE.md)**
 
 ## Features
 
@@ -324,7 +316,9 @@ if (result.status == ESP32Compiler::CompileStatus::SUCCESS) {
 - **Language**: C++17
 - **Build System**: CMake
 - **Standard Library**: STL (no external dependencies for core)
-- **GUI**: Platform-specific (GTK+3 for Linux, Win32 for Windows, Cocoa for macOS)
+- **GUI Options**: 
+  - Terminal UI (ANSI escape codes)
+  - Simple GUI (X11 for Linux, Win32 for Windows, Cocoa for macOS)
 
 ### Design Patterns
 - **MVC Architecture**: Separation of model, view, and controller
@@ -333,10 +327,12 @@ if (result.status == ESP32Compiler::CompileStatus::SUCCESS) {
 - **Strategy Pattern**: Different compilation strategies per board
 
 ### No External Dependencies
-The core IDE logic has **zero external dependencies** beyond the standard C++ library. Platform GUI libraries are system-provided:
-- Linux: GTK+3 (system package)
-- Windows: Win32 (built into Windows)
-- macOS: Cocoa (built into macOS)
+The IDE has **zero external dependencies** beyond the standard C++ library. Platform GUI libraries are system-provided:
+- Linux Terminal UI: None required
+- Linux Simple GUI: X11 (libx11-dev package)
+- Windows: Win32 API (built into Windows)
+- macOS Terminal UI: None required
+- macOS Simple GUI: Cocoa (built into macOS, planned)
 
 ## Contributing
 

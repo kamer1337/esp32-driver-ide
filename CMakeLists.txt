@@ -6,10 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
 option(BUILD_TESTS "Build test programs" OFF)
+option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32) instead of terminal UI" OFF)
 
-# Source files
-set(SOURCES
-    src/main.cpp
+# Common source files
+set(COMMON_SOURCES
     src/editor/text_editor.cpp
     src/editor/syntax_highlighter.cpp
     src/file_manager/file_manager.cpp
@@ -18,8 +18,21 @@ set(SOURCES
     src/serial/serial_monitor.cpp
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
-    src/gui/terminal_window.cpp
     src/utils/string_utils.cpp
+)
+
+# GUI-specific sources
+if(BUILD_WITH_SIMPLE_GUI)
+    set(GUI_SOURCES src/gui/simple_gui_window.cpp)
+else()
+    set(GUI_SOURCES src/gui/terminal_window.cpp)
+endif()
+
+# Source files
+set(SOURCES
+    src/main.cpp
+    ${COMMON_SOURCES}
+    ${GUI_SOURCES}
 )
 
 # Header files
@@ -33,6 +46,7 @@ set(HEADERS
     src/gui/main_window.h
     src/gui/console_widget.h
     src/gui/terminal_window.h
+    src/gui/simple_gui_window.h
     src/utils/string_utils.h
 )
 
@@ -65,12 +79,37 @@ target_include_directories(esp32-driver-ide-demo PRIVATE
 if(WIN32)
     # Windows-specific settings
     target_compile_definitions(esp32-driver-ide PRIVATE PLATFORM_WINDOWS)
+    if(BUILD_WITH_SIMPLE_GUI)
+        # Link with GDI32 for Windows GUI
+        target_link_libraries(esp32-driver-ide gdi32 user32)
+    endif()
 elseif(APPLE)
     # macOS-specific settings
     target_compile_definitions(esp32-driver-ide PRIVATE PLATFORM_MACOS)
+    if(BUILD_WITH_SIMPLE_GUI)
+        # Link with Cocoa framework for macOS GUI
+        target_link_libraries(esp32-driver-ide "-framework Cocoa" "-framework CoreGraphics")
+    endif()
 elseif(UNIX)
     # Linux-specific settings
     target_compile_definitions(esp32-driver-ide PRIVATE PLATFORM_LINUX)
+    if(BUILD_WITH_SIMPLE_GUI)
+        # Link with X11 for Linux GUI
+        find_package(X11)
+        if(X11_FOUND)
+            target_link_libraries(esp32-driver-ide ${X11_LIBRARIES})
+            target_include_directories(esp32-driver-ide PRIVATE ${X11_INCLUDE_DIR})
+        else()
+            message(WARNING "X11 not found. Simple GUI will not be available on Linux. Install libx11-dev to enable.")
+            # Disable simple GUI if X11 is not available
+            target_compile_definitions(esp32-driver-ide PRIVATE X11_NOT_AVAILABLE)
+        endif()
+    endif()
+endif()
+
+# Add GUI build definition
+if(BUILD_WITH_SIMPLE_GUI)
+    target_compile_definitions(esp32-driver-ide PRIVATE USE_SIMPLE_GUI)
 endif()
 
 # Install rules
