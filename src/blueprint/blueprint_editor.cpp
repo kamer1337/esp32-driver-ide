@@ -114,6 +114,15 @@ Component* Blueprint::GetComponent(const std::string& component_id) {
     return nullptr;
 }
 
+const Component* Blueprint::GetComponent(const std::string& component_id) const {
+    for (const auto& component : components_) {
+        if (component->GetId() == component_id) {
+            return component.get();
+        }
+    }
+    return nullptr;
+}
+
 void Blueprint::AddConnection(std::unique_ptr<Connection> connection) {
     connections_.push_back(std::move(connection));
 }

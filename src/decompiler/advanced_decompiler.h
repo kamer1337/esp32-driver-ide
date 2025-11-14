@@ -6,6 +6,7 @@
 #include <memory>
 #include <map>
 #include <set>
+#include <functional>
 
 namespace esp32_ide {
 namespace decompiler {

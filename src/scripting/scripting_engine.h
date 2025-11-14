@@ -142,7 +142,6 @@ private:
     // Parser and interpreter
     struct Token {
         enum class Type {
-            END,
             IDENTIFIER,
             NUMBER,
             STRING,
@@ -179,8 +178,15 @@ private:
         int line;
     };
     
-    struct Expression;
-    struct Statement;
+    struct Expression {
+        // Minimal definition to avoid incomplete type
+        virtual ~Expression() = default;
+    };
+    
+    struct Statement {
+        // Minimal definition to avoid incomplete type
+        virtual ~Statement() = default;
+    };
     
     // Lexer
     std::vector<Token> Tokenize(const std::string& source);
