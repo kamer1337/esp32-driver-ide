@@ -122,6 +122,21 @@ endif()
 # Install rules
 install(TARGETS esp32-driver-ide esp32-driver-ide-demo DESTINATION bin)
 
+# Feature test executable
+add_executable(esp32-driver-ide-feature-test
+    src/feature_test.cpp
+    src/editor/text_editor.cpp
+    src/editor/tab_manager.cpp
+    src/editor/autocomplete_engine.cpp
+    src/file_manager/file_tree.cpp
+    src/file_manager/project_templates.cpp
+    src/collaboration/collaboration.cpp
+)
+
+target_include_directories(esp32-driver-ide-feature-test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 # Testing
 if(BUILD_TESTS)
     enable_testing()
