@@ -4,7 +4,8 @@
 
 namespace esp32_ide {
 
-TextEditor::TextEditor() {
+TextEditor::TextEditor() 
+    : active_tab_id_(-1), next_tab_id_(0), next_group_id_(0), split_orientation_(SplitOrientation::NONE) {
     current_state_.content = "";
     current_state_.cursor_position = 0;
     current_state_.selection_start = 0;
@@ -264,6 +265,167 @@ std::vector<TextEditor::CompletionItem> TextEditor::GetCompletionsAtCursor() con
               });
     
     return completions;
+}
+
+// Tab management
+int TextEditor::CreateTab(const std::string& filename) {
+    EditorTab tab;
+    tab.filename = filename;
+    tab.content = "";
+    tab.cursor_position = 0;
+    tab.is_modified = false;
+    tab.group_id = -1;
+    
+    int tab_id = next_tab_id_++;
+    tabs_.push_back(tab);
+    active_tab_id_ = tab_id;
+    
+    return tab_id;
+}
+
+bool TextEditor::CloseTab(int tab_id) {
+    if (tab_id < 0 || tab_id >= static_cast<int>(tabs_.size())) {
+        return false;
+    }
+    
+    // Remove from any group
+    for (auto& group : tab_groups_) {
+        auto it = std::find(group.tab_indices.begin(), group.tab_indices.end(), tab_id);
+        if (it != group.tab_indices.end()) {
+            group.tab_indices.erase(it);
+        }
+    }
+    
+    // Don't actually remove to preserve indices, just mark as closed
+    tabs_[tab_id].filename = "";
+    
+    // Switch to another tab if this was active
+    if (active_tab_id_ == tab_id) {
+        active_tab_id_ = -1;
+        for (size_t i = 0; i < tabs_.size(); ++i) {
+            if (!tabs_[i].filename.empty()) {
+                active_tab_id_ = static_cast<int>(i);
+                break;
+            }
+        }
+    }
+    
+    return true;
+}
+
+bool TextEditor::SwitchToTab(int tab_id) {
+    if (tab_id < 0 || tab_id >= static_cast<int>(tabs_.size())) {
+        return false;
+    }
+    
+    if (tabs_[tab_id].filename.empty()) {
+        return false; // Tab is closed
+    }
+    
+    active_tab_id_ = tab_id;
+    
+    // Update current state from tab
+    current_state_.content = tabs_[tab_id].content;
+    current_state_.cursor_position = tabs_[tab_id].cursor_position;
+    
+    return true;
+}
+
+TextEditor::EditorTab* TextEditor::GetTab(int tab_id) {
+    if (tab_id < 0 || tab_id >= static_cast<int>(tabs_.size())) {
+        return nullptr;
+    }
+    return &tabs_[tab_id];
+}
+
+const TextEditor::EditorTab* TextEditor::GetTab(int tab_id) const {
+    if (tab_id < 0 || tab_id >= static_cast<int>(tabs_.size())) {
+        return nullptr;
+    }
+    return &tabs_[tab_id];
+}
+
+std::vector<TextEditor::EditorTab> TextEditor::GetAllTabs() const {
+    std::vector<EditorTab> result;
+    for (const auto& tab : tabs_) {
+        if (!tab.filename.empty()) {
+            result.push_back(tab);
+        }
+    }
+    return result;
+}
+
+// Tab groups
+int TextEditor::CreateTabGroup() {
+    TabGroup group;
+    group.id = next_group_id_++;
+    group.active_tab_index = -1;
+    
+    tab_groups_.push_back(group);
+    return group.id;
+}
+
+bool TextEditor::MoveTabToGroup(int tab_id, int group_id) {
+    if (tab_id < 0 || tab_id >= static_cast<int>(tabs_.size())) {
+        return false;
+    }
+    
+    // Find the group
+    TabGroup* target_group = nullptr;
+    for (auto& group : tab_groups_) {
+        if (group.id == group_id) {
+            target_group = &group;
+            break;
+        }
+    }
+    
+    if (!target_group) {
+        return false;
+    }
+    
+    // Remove from current group
+    for (auto& group : tab_groups_) {
+        auto it = std::find(group.tab_indices.begin(), group.tab_indices.end(), tab_id);
+        if (it != group.tab_indices.end()) {
+            group.tab_indices.erase(it);
+        }
+    }
+    
+    // Add to new group
+    target_group->tab_indices.push_back(tab_id);
+    tabs_[tab_id].group_id = group_id;
+    
+    return true;
+}
+
+bool TextEditor::CloseTabGroup(int group_id) {
+    auto it = std::find_if(tab_groups_.begin(), tab_groups_.end(),
+                          [group_id](const TabGroup& g) { return g.id == group_id; });
+    
+    if (it == tab_groups_.end()) {
+        return false;
+    }
+    
+    // Close all tabs in the group
+    for (int tab_id : it->tab_indices) {
+        CloseTab(tab_id);
+    }
+    
+    tab_groups_.erase(it);
+    return true;
+}
+
+TextEditor::TabGroup* TextEditor::GetTabGroup(int group_id) {
+    for (auto& group : tab_groups_) {
+        if (group.id == group_id) {
+            return &group;
+        }
+    }
+    return nullptr;
+}
+
+std::vector<TextEditor::TabGroup> TextEditor::GetAllTabGroups() const {
+    return tab_groups_;
 }
 
 } // namespace esp32_ide

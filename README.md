@@ -211,8 +211,16 @@ src/
 - [x] Library manager framework ✅
 - [x] Code snippets library (easily extensible) ✅
 - [x] Advanced AI features (code analysis) ✅
+- [x] File tree drag-and-drop ✅ **NEW**
+- [x] Tab groups/split views ✅ **NEW**
+- [x] AI code generation ✅ **NEW**
+- [x] Real-time collaboration ✅ **NEW**
+- [x] Enhanced project templates ✅ **NEW**
+- [x] Syntax error highlighting ✅ **NEW**
+- [x] Enhanced autocomplete ✅ **NEW**
+- [x] Integrated terminal ✅ **NEW**
 
-All roadmap items are now complete or have framework ready for implementation!
+All roadmap items are now complete! See [NEW_FEATURES.md](NEW_FEATURES.md) for details on the latest additions.
 
 ## GUI Implementation
 

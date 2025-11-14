@@ -692,4 +692,270 @@ std::vector<AIAssistant::CompletionSuggestion> AIAssistant::GetCompletionSuggest
     return suggestions;
 }
 
+// Enhanced code generation
+std::string AIAssistant::GenerateCompleteSketch(const std::string& description) {
+    std::string lower_desc = description;
+    std::transform(lower_desc.begin(), lower_desc.end(), lower_desc.begin(), ::tolower);
+    
+    std::string code;
+    
+    // Detect what features are needed
+    bool needs_wifi = lower_desc.find("wifi") != std::string::npos || 
+                      lower_desc.find("web") != std::string::npos ||
+                      lower_desc.find("internet") != std::string::npos;
+    bool needs_sensor = lower_desc.find("sensor") != std::string::npos ||
+                       lower_desc.find("temperature") != std::string::npos ||
+                       lower_desc.find("humidity") != std::string::npos;
+    bool needs_led = lower_desc.find("led") != std::string::npos ||
+                    lower_desc.find("blink") != std::string::npos;
+    
+    // Add includes
+    if (needs_wifi) {
+        code += "#include <WiFi.h>\n";
+    }
+    code += "\n";
+    
+    // Add constants
+    if (needs_wifi) {
+        code += "const char* ssid = \"YOUR_SSID\";\n";
+        code += "const char* password = \"YOUR_PASSWORD\";\n\n";
+    }
+    
+    if (needs_led) {
+        code += "const int LED_PIN = 2;  // Built-in LED\n\n";
+    }
+    
+    // Setup function
+    code += "void setup() {\n";
+    code += "  Serial.begin(115200);\n";
+    code += "  delay(100);\n";
+    code += "  Serial.println(\"ESP32 Starting...\");\n\n";
+    
+    if (needs_wifi) {
+        code += "  // Connect to WiFi\n";
+        code += "  WiFi.begin(ssid, password);\n";
+        code += "  Serial.print(\"Connecting to WiFi\");\n";
+        code += "  while (WiFi.status() != WL_CONNECTED) {\n";
+        code += "    delay(500);\n";
+        code += "    Serial.print(\".\");\n";
+        code += "  }\n";
+        code += "  Serial.println(\"\\nConnected!\");\n";
+        code += "  Serial.print(\"IP Address: \");\n";
+        code += "  Serial.println(WiFi.localIP());\n\n";
+    }
+    
+    if (needs_led) {
+        code += "  pinMode(LED_PIN, OUTPUT);\n\n";
+    }
+    
+    code += "}\n\n";
+    
+    // Loop function
+    code += "void loop() {\n";
+    
+    if (needs_led) {
+        code += "  digitalWrite(LED_PIN, HIGH);\n";
+        code += "  delay(1000);\n";
+        code += "  digitalWrite(LED_PIN, LOW);\n";
+        code += "  delay(1000);\n";
+    } else {
+        code += "  // Main code here\n";
+        code += "  delay(1000);\n";
+    }
+    
+    code += "}\n";
+    
+    return code;
+}
+
+std::string AIAssistant::GenerateWebServerCode(const std::string& endpoint_description) {
+    return R"(#include <WiFi.h>
+#include <WebServer.h>
+
+const char* ssid = "YOUR_SSID";
+const char* password = "YOUR_PASSWORD";
+
+WebServer server(80);
+
+void handleRoot() {
+  String html = "<html><body>";
+  html += "<h1>ESP32 Web Server</h1>";
+  html += "<p>)" + endpoint_description + R"(</p>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+  
+  // Setup web server
+  server.on("/", handleRoot);
+  server.begin();
+  Serial.println("Web server started");
+}
+
+void loop() {
+  server.handleClient();
+}
+)";
+}
+
+std::string AIAssistant::GenerateMQTTCode(const std::string& topic) {
+    return R"(#include <WiFi.h>
+#include <PubSubClient.h>
+
+const char* ssid = "YOUR_SSID";
+const char* password = "YOUR_PASSWORD";
+const char* mqtt_server = "mqtt.example.com";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (unsigned int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+void reconnect() {
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    if (client.connect("ESP32Client")) {
+      Serial.println("connected");
+      client.subscribe(")" + topic + R"(");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" retrying in 5 seconds");
+      delay(5000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+  
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+  
+  // Publish example
+  static unsigned long lastMsg = 0;
+  unsigned long now = millis();
+  if (now - lastMsg > 5000) {
+    lastMsg = now;
+    String msg = "Hello from ESP32";
+    client.publish(")" + topic + R"(", msg.c_str());
+  }
+}
+)";
+}
+
+std::string AIAssistant::GenerateOTAUpdateCode() {
+    return R"(#include <WiFi.h>
+#include <ArduinoOTA.h>
+
+const char* ssid = "YOUR_SSID";
+const char* password = "YOUR_PASSWORD";
+
+void setup() {
+  Serial.begin(115200);
+  
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+  
+  // OTA Setup
+  ArduinoOTA.setHostname("ESP32-OTA");
+  ArduinoOTA.setPassword("admin");
+  
+  ArduinoOTA.onStart([]() {
+    Serial.println("OTA Update Starting...");
+  });
+  
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nOTA Update Complete!");
+  });
+  
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+  });
+  
+  ArduinoOTA.begin();
+  Serial.println("OTA Ready");
+}
+
+void loop() {
+  ArduinoOTA.handle();
+  // Your code here
+}
+)";
+}
+
+std::string AIAssistant::GenerateDeepSleepCode(int sleep_seconds) {
+    std::string code = R"(#include <esp_sleep.h>
+
+#define uS_TO_S_FACTOR 1000000
+
+void setup() {
+  Serial.begin(115200);
+  delay(100);
+  
+  Serial.println("ESP32 Waking up");
+  
+  // Your code here
+  Serial.println("Going to sleep for )" + std::to_string(sleep_seconds) + R"( seconds");
+  
+  // Configure deep sleep
+  esp_sleep_enable_timer_wakeup()" + std::to_string(sleep_seconds) + R"( * uS_TO_S_FACTOR);
+  
+  // Enter deep sleep
+  Serial.println("Entering deep sleep...");
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // This will never run due to deep sleep
+}
+)";
+    return code;
+}
+
 } // namespace esp32_ide

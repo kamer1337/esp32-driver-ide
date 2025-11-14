@@ -12,12 +12,14 @@ option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32) instead o
 set(COMMON_SOURCES
     src/editor/text_editor.cpp
     src/editor/syntax_highlighter.cpp
+    src/editor/collaboration.cpp
     src/file_manager/file_manager.cpp
     src/ai_assistant/ai_assistant.cpp
     src/compiler/esp32_compiler.cpp
     src/serial/serial_monitor.cpp
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
+    src/gui/integrated_terminal.cpp
     src/utils/string_utils.cpp
     src/renderer/pure_c_renderer.cpp
     src/blueprint/blueprint_editor.cpp
@@ -43,12 +45,14 @@ set(SOURCES
 set(HEADERS
     src/editor/text_editor.h
     src/editor/syntax_highlighter.h
+    src/editor/collaboration.h
     src/file_manager/file_manager.h
     src/ai_assistant/ai_assistant.h
     src/compiler/esp32_compiler.h
     src/serial/serial_monitor.h
     src/gui/main_window.h
     src/gui/console_widget.h
+    src/gui/integrated_terminal.h
     src/gui/terminal_window.h
     src/gui/simple_gui_window.h
     src/utils/string_utils.h
