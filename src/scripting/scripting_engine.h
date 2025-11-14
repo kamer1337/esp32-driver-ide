@@ -168,7 +168,6 @@ private:
             FOR,
             FUNCTION,
             RETURN,
-            END,
             NEWLINE,
             COLON
         };
@@ -178,6 +177,15 @@ private:
         int line;
     };
     
+    // Simple placeholder structures for Expression and Statement
+    struct Expression {
+        std::string type;
+        std::string value;
+    };
+    
+    struct Statement {
+        std::string type;
+        std::string value;
     struct Expression {
         // Minimal definition to avoid incomplete type
         virtual ~Expression() = default;
