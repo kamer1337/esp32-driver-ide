@@ -15,6 +15,7 @@ MainWindow::MainWindow()
     ai_assistant_ = std::make_unique<AIAssistant>();
     compiler_ = std::make_unique<ESP32Compiler>();
     serial_monitor_ = std::make_unique<SerialMonitor>();
+    vm_emulator_ = std::make_unique<VMEmulator>();
     console_ = std::make_unique<ConsoleWidget>();
 }
 
@@ -153,7 +154,122 @@ void MainWindow::OnFileSelected(const std::string& filename) {
 void MainWindow::OnBoardChanged(ESP32Compiler::BoardType board) {
     compiler_->SetBoard(board);
     console_->AddMessage("Board changed to: " + compiler_->GetBoardName(board));
+    
+    // Update VM emulator to match board type
+    VMEmulator::BoardType vm_board;
+    switch (board) {
+        case ESP32Compiler::BoardType::ESP32:
+            vm_board = VMEmulator::BoardType::ESP32;
+            break;
+        case ESP32Compiler::BoardType::ESP32_S2:
+            vm_board = VMEmulator::BoardType::ESP32_S2;
+            break;
+        case ESP32Compiler::BoardType::ESP32_S3:
+            vm_board = VMEmulator::BoardType::ESP32_S3;
+            break;
+        case ESP32Compiler::BoardType::ESP32_C3:
+            vm_board = VMEmulator::BoardType::ESP32_C3;
+            break;
+        default:
+            vm_board = VMEmulator::BoardType::ESP32;
+    }
+    vm_emulator_->SetBoardType(vm_board);
 }
+
+void MainWindow::OnStartEmulator() {
+    if (vm_emulator_->IsRunning()) {
+        console_->AddMessage("VM Emulator is already running", ConsoleWidget::MessageType::WARNING);
+        return;
+    }
+    
+    if (vm_emulator_->Start()) {
+        console_->AddMessage("VM Emulator started: " + vm_emulator_->GetBoardName(), 
+                           ConsoleWidget::MessageType::SUCCESS);
+        auto config = vm_emulator_->GetDeviceConfig();
+        console_->AddMessage("  Flash: " + std::to_string(config.flash_size_mb) + "MB, " +
+                           "PSRAM: " + std::to_string(config.psram_size_mb) + "MB, " +
+                           "SRAM: " + std::to_string(config.sram_size_kb) + "KB");
+    } else {
+        console_->AddMessage("Failed to start VM Emulator", ConsoleWidget::MessageType::ERROR);
+    }
+}
+
+void MainWindow::OnStopEmulator() {
+    if (!vm_emulator_->IsRunning()) {
+        console_->AddMessage("VM Emulator is not running", ConsoleWidget::MessageType::WARNING);
+        return;
+    }
+    
+    if (vm_emulator_->Stop()) {
+        console_->AddMessage("VM Emulator stopped", ConsoleWidget::MessageType::SUCCESS);
+    } else {
+        console_->AddMessage("Failed to stop VM Emulator", ConsoleWidget::MessageType::ERROR);
+    }
+}
+
+void MainWindow::OnTestInEmulator() {
+    if (!vm_emulator_->IsRunning()) {
+        console_->AddMessage("Starting VM Emulator for testing...");
+        OnStartEmulator();
+    }
+    
+    std::string code = editor_->GetText();
+    console_->AddMessage("Testing code in virtual environment...");
+    
+    // First compile the code
+    auto compile_result = compiler_->Compile(code, compiler_->GetBoard());
+    if (compile_result.status != ESP32Compiler::CompileStatus::SUCCESS) {
+        console_->AddMessage("Cannot test: Code has compilation errors", ConsoleWidget::MessageType::ERROR);
+        return;
+    }
+    
+    // Execute in VM emulator
+    auto exec_result = vm_emulator_->ExecuteCode(code);
+    
+    if (exec_result.success) {
+        console_->AddMessage("✓ Virtual execution successful", ConsoleWidget::MessageType::SUCCESS);
+        console_->AddMessage("  Execution time: " + std::to_string(exec_result.execution_time_ms) + "ms");
+        console_->AddMessage("  Memory used: " + std::to_string(exec_result.memory_used) + " bytes");
+        
+        // Show serial output from VM
+        auto serial_output = vm_emulator_->ReadSerialOutput();
+        if (!serial_output.empty()) {
+            console_->AddMessage("Serial output from VM:");
+            for (const auto& line : serial_output) {
+                console_->AddMessage("  > " + line);
+            }
+        }
+        
+        // Show memory status
+        auto memory = vm_emulator_->GetMemoryStatus();
+        console_->AddMessage("Memory status:");
+        console_->AddMessage("  Free heap: " + std::to_string(memory.free_heap) + " bytes");
+        console_->AddMessage("  Fragmentation: " + std::to_string(static_cast<int>(memory.fragmentation_percent)) + "%");
+        
+    } else {
+        console_->AddMessage("✗ Virtual execution failed", ConsoleWidget::MessageType::ERROR);
+        for (const auto& error : exec_result.errors) {
+            console_->AddMessage("  Error: " + error, ConsoleWidget::MessageType::ERROR);
+        }
+    }
+    
+    // Validate configuration
+    auto validation = vm_emulator_->ValidateConfiguration();
+    if (!validation.valid) {
+        console_->AddMessage("Configuration validation failed:", ConsoleWidget::MessageType::ERROR);
+        for (const auto& error : validation.errors) {
+            console_->AddMessage("  ✗ " + error, ConsoleWidget::MessageType::ERROR);
+        }
+    }
+    
+    if (!validation.warnings.empty()) {
+        console_->AddMessage("Configuration warnings:", ConsoleWidget::MessageType::WARNING);
+        for (const auto& warning : validation.warnings) {
+            console_->AddMessage("  ⚠ " + warning, ConsoleWidget::MessageType::WARNING);
+        }
+    }
+}
+
 
 void MainWindow::UpdateTitle() {
     std::string current = file_manager_->GetCurrentFile();
@@ -237,6 +353,16 @@ void MainWindow::SetupCallbacks() {
                 type = ConsoleWidget::MessageType::NORMAL;
         }
         console_->AddMessage(msg.content, type);
+    });
+    
+    // Setup VM emulator callbacks
+    vm_emulator_->SetOutputCallback([this](const std::string& message) {
+        console_->AddMessage("[VM] " + message);
+    });
+    
+    vm_emulator_->SetPinChangeCallback([this](int pin, VMEmulator::PinState state) {
+        std::string state_str = (state == VMEmulator::PinState::HIGH) ? "HIGH" : "LOW";
+        console_->AddMessage("[VM] Pin " + std::to_string(pin) + " changed to " + state_str);
     });
 }
 

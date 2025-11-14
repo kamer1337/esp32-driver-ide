@@ -7,6 +7,7 @@
 #include "ai_assistant/ai_assistant.h"
 #include "compiler/esp32_compiler.h"
 #include "serial/serial_monitor.h"
+#include "emulator/vm_emulator.h"
 #include "gui/console_widget.h"
 #include <memory>
 #include <string>
@@ -49,6 +50,11 @@ public:
     // Board selection
     void OnBoardChanged(ESP32Compiler::BoardType board);
     
+    // VM Emulator actions
+    void OnStartEmulator();
+    void OnStopEmulator();
+    void OnTestInEmulator();
+    
 private:
     // Components
     std::unique_ptr<TextEditor> editor_;
@@ -57,6 +63,7 @@ private:
     std::unique_ptr<AIAssistant> ai_assistant_;
     std::unique_ptr<ESP32Compiler> compiler_;
     std::unique_ptr<SerialMonitor> serial_monitor_;
+    std::unique_ptr<VMEmulator> vm_emulator_;
     std::unique_ptr<ConsoleWidget> console_;
     
     // Window state
