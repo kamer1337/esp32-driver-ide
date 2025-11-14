@@ -124,6 +124,7 @@ public:
     void AddComponent(std::unique_ptr<Component> component);
     void RemoveComponent(const std::string& component_id);
     Component* GetComponent(const std::string& component_id);
+    const Component* GetComponent(const std::string& component_id) const;
     const std::vector<std::unique_ptr<Component>>& GetComponents() const { return components_; }
     
     // Connection management

@@ -55,6 +55,26 @@ public:
     // Default sketch
     static std::string GetDefaultSketch();
     
+    // File tree structure for hierarchical navigation
+    struct FileTreeNode {
+        std::string name;
+        std::string path;
+        bool is_folder;
+        FileTreeNode* parent;
+        std::vector<std::unique_ptr<FileTreeNode>> children;
+        
+        FileTreeNode(const std::string& n, const std::string& p, bool folder, FileTreeNode* par = nullptr)
+            : name(n), path(p), is_folder(folder), parent(par) {}
+    };
+    
+    // File tree operations
+    FileTreeNode* GetFileTree() const { return file_tree_root_.get(); }
+    bool CreateFolder(const std::string& path);
+    bool MoveFileOrFolder(const std::string& src_path, const std::string& dest_path);
+    bool RenameFileOrFolder(const std::string& path, const std::string& new_name);
+    FileTreeNode* FindNodeByPath(const std::string& path) const;
+    std::string GetNodeFullPath(const FileTreeNode* node) const;
+    
     // Custom code templates
     struct CodeTemplate {
         std::string name;
@@ -79,9 +99,13 @@ private:
     std::string current_file_;
     std::string project_path_;
     std::map<std::string, CodeTemplate> templates_;
+    std::unique_ptr<FileTreeNode> file_tree_root_;
     
     void MarkAsModified(const std::string& name, bool modified = true);
     void InitializeDefaultTemplates();
+    void InitializeFileTree();
+    void RebuildFileTree();
+    FileTreeNode* FindNodeByPathRecursive(FileTreeNode* node, const std::string& path) const;
 };
 
 } // namespace esp32_ide

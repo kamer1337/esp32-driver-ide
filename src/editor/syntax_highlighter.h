@@ -25,7 +25,8 @@ public:
         PREPROCESSOR,
         OPERATOR,
         IDENTIFIER,
-        WHITESPACE
+        WHITESPACE,
+        ERROR  // For syntax errors
     };
     
     struct Token {
@@ -35,10 +36,22 @@ public:
         std::string text;
     };
     
+    struct SyntaxError {
+        size_t line;
+        size_t column;
+        size_t position;
+        std::string message;
+        std::string severity;  // "error", "warning", "info"
+    };
+    
     SyntaxHighlighter();
     
     // Tokenize code
     std::vector<Token> Tokenize(const std::string& code) const;
+    
+    // Syntax error detection
+    std::vector<SyntaxError> CheckSyntax(const std::string& code) const;
+    bool HasSyntaxErrors(const std::string& code) const;
     
     // Get ANSI color code for token type (for terminal output)
     static std::string GetColorCode(TokenType type);

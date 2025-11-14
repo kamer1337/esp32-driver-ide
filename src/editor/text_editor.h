@@ -70,6 +70,47 @@ public:
     };
     std::vector<CompletionItem> GetCompletionsAtCursor() const;
     
+    // Tab groups and split views
+    enum class SplitOrientation {
+        NONE,
+        HORIZONTAL,
+        VERTICAL
+    };
+    
+    struct EditorTab {
+        std::string filename;
+        std::string content;
+        size_t cursor_position;
+        bool is_modified;
+        int group_id;
+    };
+    
+    struct TabGroup {
+        int id;
+        std::vector<int> tab_indices;
+        int active_tab_index;
+    };
+    
+    // Tab management
+    int CreateTab(const std::string& filename = "untitled.ino");
+    bool CloseTab(int tab_id);
+    bool SwitchToTab(int tab_id);
+    int GetActiveTabId() const { return active_tab_id_; }
+    EditorTab* GetTab(int tab_id);
+    const EditorTab* GetTab(int tab_id) const;
+    std::vector<EditorTab> GetAllTabs() const;
+    
+    // Tab groups
+    int CreateTabGroup();
+    bool MoveTabToGroup(int tab_id, int group_id);
+    bool CloseTabGroup(int group_id);
+    TabGroup* GetTabGroup(int group_id);
+    std::vector<TabGroup> GetAllTabGroups() const;
+    
+    // Split view
+    void SetSplitOrientation(SplitOrientation orientation) { split_orientation_ = orientation; }
+    SplitOrientation GetSplitOrientation() const { return split_orientation_; }
+    
 private:
     // Configuration constants
     static constexpr size_t MAX_CONTENT_SIZE = 10 * 1024 * 1024; // 10MB limit
@@ -87,6 +128,14 @@ private:
     std::vector<EditorState> redo_stack_;
     ChangeCallback change_callback_;
     std::vector<size_t> breakpoints_;
+    
+    // Tab and group management
+    std::vector<EditorTab> tabs_;
+    std::vector<TabGroup> tab_groups_;
+    int active_tab_id_;
+    int next_tab_id_;
+    int next_group_id_;
+    SplitOrientation split_orientation_;
     
     void SaveState();
     void NotifyChange();

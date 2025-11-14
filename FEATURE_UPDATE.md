@@ -326,15 +326,16 @@ Please connect to a device first using the Connect button in the toolbar
 
 ## Future Enhancements
 
-Possible future additions:
-- File tree drag-and-drop
-- Tab groups/split views
-- AI code generation
-- Real-time collaboration
-- Project templates
-- Syntax error highlighting in editor
-- Autocomplete suggestions
-- Integrated terminal
+All planned enhancements have been implemented! See [NEW_FEATURES.md](NEW_FEATURES.md) for details:
+
+✅ File tree drag-and-drop - IMPLEMENTED
+✅ Tab groups/split views - IMPLEMENTED
+✅ AI code generation - IMPLEMENTED
+✅ Real-time collaboration - IMPLEMENTED
+✅ Project templates - ENHANCED
+✅ Syntax error highlighting in editor - IMPLEMENTED
+✅ Autocomplete suggestions - ENHANCED
+✅ Integrated terminal - IMPLEMENTED
 
 ## Compatibility
 

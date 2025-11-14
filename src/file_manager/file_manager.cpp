@@ -7,6 +7,7 @@ namespace esp32_ide {
 
 FileManager::FileManager() : current_file_("") {
     InitializeDefaultTemplates();
+    InitializeFileTree();
 }
 
 FileManager::~FileManager() = default;
@@ -282,6 +283,137 @@ void loop() {
   Serial.println(value);
   delay(1000);
 })", "Analog sensor reading", {"sensor", "analog", "adc"});
+    
+    // Bluetooth Low Energy template
+    AddTemplate("ble_beacon", R"(#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEServer.h>
+
+#define SERVICE_UUID        "{{service_uuid}}"
+#define CHARACTERISTIC_UUID "{{char_uuid}}"
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Starting BLE");
+  
+  BLEDevice::init("ESP32-BLE");
+  BLEServer *pServer = BLEDevice::createServer();
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+  BLECharacteristic *pCharacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE
+  );
+  
+  pCharacteristic->setValue("Hello BLE");
+  pService->start();
+  
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->start();
+  Serial.println("BLE Advertising Started");
+}
+
+void loop() {
+  delay(2000);
+})", "Bluetooth Low Energy beacon", {"bluetooth", "ble", "wireless"});
+    
+    // MQTT IoT template  
+    AddTemplate("mqtt_iot", R"(#include <WiFi.h>
+#include <PubSubClient.h>
+
+const char* ssid = "{{ssid}}";
+const char* password = "{{password}}";
+const char* mqtt_server = "{{mqtt_server}}";
+const char* topic = "{{topic}}";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message: ");
+  for (unsigned int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+void reconnect() {
+  while (!client.connected()) {
+    if (client.connect("ESP32Client")) {
+      client.subscribe(topic);
+    } else {
+      delay(5000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
+}
+
+void loop() {
+  if (!client.connected()) reconnect();
+  client.loop();
+})", "MQTT IoT communication", {"mqtt", "iot", "cloud"});
+    
+    // Deep Sleep template
+    AddTemplate("deep_sleep", R"(#include <esp_sleep.h>
+
+#define uS_TO_S_FACTOR 1000000
+#define TIME_TO_SLEEP  {{sleep_seconds}}
+
+void setup() {
+  Serial.begin(115200);
+  delay(100);
+  
+  Serial.println("Going to sleep...");
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // Never runs
+})", "Deep sleep power saving", {"power", "sleep", "battery"});
+    
+    // Real-time Clock template
+    AddTemplate("rtc_time", R"(#include <Wire.h>
+#include <RTClib.h>
+
+RTC_DS3231 rtc;
+
+void setup() {
+  Serial.begin(115200);
+  
+  if (!rtc.begin()) {
+    Serial.println("RTC not found");
+    while (1);
+  }
+  
+  if (rtc.lostPower()) {
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+}
+
+void loop() {
+  DateTime now = rtc.now();
+  Serial.print(now.year());
+  Serial.print('/');
+  Serial.print(now.month());
+  Serial.print('/');
+  Serial.print(now.day());
+  Serial.print(' ');
+  Serial.print(now.hour());
+  Serial.print(':');
+  Serial.print(now.minute());
+  Serial.print(':');
+  Serial.println(now.second());
+  delay(1000);
+})", "Real-time clock with DS3231", {"rtc", "time", "i2c"});
 }
 
 void FileManager::AddTemplate(const std::string& name, const std::string& code, 
@@ -354,6 +486,153 @@ std::string FileManager::ApplyTemplate(const std::string& template_name,
     }
     
     return code;
+}
+
+// File tree operations
+void FileManager::InitializeFileTree() {
+    file_tree_root_ = std::make_unique<FileTreeNode>("Project", "/", true, nullptr);
+}
+
+void FileManager::RebuildFileTree() {
+    if (!file_tree_root_) {
+        InitializeFileTree();
+    }
+    
+    // Clear existing children
+    file_tree_root_->children.clear();
+    
+    // Build tree from files
+    for (const auto& file : files_) {
+        const std::string& path = file.second.path;
+        
+        // Parse path and create folder structure
+        size_t pos = 0;
+        size_t last_pos = 0;
+        FileTreeNode* current = file_tree_root_.get();
+        
+        while ((pos = path.find('/', last_pos)) != std::string::npos) {
+            std::string folder_name = path.substr(last_pos, pos - last_pos);
+            if (!folder_name.empty()) {
+                // Check if folder exists in children
+                FileTreeNode* found = nullptr;
+                for (auto& child : current->children) {
+                    if (child->name == folder_name && child->is_folder) {
+                        found = child.get();
+                        break;
+                    }
+                }
+                
+                if (!found) {
+                    // Create new folder
+                    auto new_folder = std::make_unique<FileTreeNode>(
+                        folder_name, 
+                        path.substr(0, pos), 
+                        true, 
+                        current
+                    );
+                    found = new_folder.get();
+                    current->children.push_back(std::move(new_folder));
+                }
+                
+                current = found;
+            }
+            last_pos = pos + 1;
+        }
+        
+        // Add file node
+        std::string filename = path.substr(last_pos);
+        if (!filename.empty()) {
+            auto file_node = std::make_unique<FileTreeNode>(
+                filename,
+                path,
+                false,
+                current
+            );
+            current->children.push_back(std::move(file_node));
+        }
+    }
+}
+
+bool FileManager::CreateFolder(const std::string& path) {
+    if (!file_tree_root_) {
+        InitializeFileTree();
+    }
+    
+    // Just trigger a rebuild - folders are virtual in this implementation
+    RebuildFileTree();
+    return true;
+}
+
+bool FileManager::MoveFileOrFolder(const std::string& src_path, const std::string& dest_path) {
+    // Check if source file exists
+    if (!FileExists(src_path)) {
+        return false;
+    }
+    
+    // Get file content
+    FileInfo info = files_[src_path];
+    
+    // Update path
+    info.path = dest_path;
+    info.name = dest_path;
+    
+    // Remove old entry and add new
+    files_.erase(src_path);
+    files_[dest_path] = info;
+    
+    // Update current file if needed
+    if (current_file_ == src_path) {
+        current_file_ = dest_path;
+    }
+    
+    // Rebuild tree
+    RebuildFileTree();
+    return true;
+}
+
+bool FileManager::RenameFileOrFolder(const std::string& path, const std::string& new_name) {
+    // Extract directory from path
+    size_t last_slash = path.find_last_of('/');
+    std::string dir = (last_slash != std::string::npos) ? path.substr(0, last_slash + 1) : "";
+    std::string new_path = dir + new_name;
+    
+    return MoveFileOrFolder(path, new_path);
+}
+
+FileManager::FileTreeNode* FileManager::FindNodeByPath(const std::string& path) const {
+    if (!file_tree_root_) {
+        return nullptr;
+    }
+    return FindNodeByPathRecursive(file_tree_root_.get(), path);
+}
+
+FileManager::FileTreeNode* FileManager::FindNodeByPathRecursive(
+    FileTreeNode* node, 
+    const std::string& path
+) const {
+    if (!node) {
+        return nullptr;
+    }
+    
+    if (node->path == path) {
+        return node;
+    }
+    
+    for (const auto& child : node->children) {
+        FileTreeNode* found = FindNodeByPathRecursive(child.get(), path);
+        if (found) {
+            return found;
+        }
+    }
+    
+    return nullptr;
+}
+
+std::string FileManager::GetNodeFullPath(const FileTreeNode* node) const {
+    if (!node) {
+        return "";
+    }
+    return node->path;
 }
 
 } // namespace esp32_ide
