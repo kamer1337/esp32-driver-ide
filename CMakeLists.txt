@@ -156,6 +156,19 @@ target_include_directories(esp32-driver-ide-feature-test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# Enhanced GUI test executable
+add_executable(esp32-driver-ide-enhanced-test
+    src/enhanced_gui_test.cpp
+    ${COMMON_SOURCES}
+    src/gui/device_library.cpp
+    src/gui/panel_system.cpp
+    src/gui/enhanced_gui_window.cpp
+)
+
+target_include_directories(esp32-driver-ide-enhanced-test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 # Testing
 if(BUILD_TESTS)
     enable_testing()
