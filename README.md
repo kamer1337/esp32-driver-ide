@@ -6,7 +6,7 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 
 **🎨 Zero External Dependencies**: Complete reimplementation with pure C++ and optional lightweight native GUI!
 
-**🚀 Lightweight & Fast**: No ImGui, no GLFW, no OpenGL - just platform-native APIs!
+**🚀 Lightweight & Fast**: Pure C++ with zero external dependencies - no GUI frameworks required!
 
 **💻 Two Interface Options**: 
 1. **Terminal Interface** (Default): Interactive menu system with ANSI color support
@@ -216,38 +216,35 @@ All roadmap items are now complete or have framework ready for implementation!
 
 ## GUI Implementation
 
-The IDE now includes a complete **ImGui-based graphical interface** with:
+The IDE features a **pure C++ implementation with custom rendering** supporting:
 
-### Interface Layout
-- **Left Panel**: File Explorer for project navigation
-- **Center Panel**: 
-  - Editor tab for code editing
-  - Debugger tab for debugging sessions
-  - Reverse Engineering tab for firmware analysis
-- **Right Panel**: Editor properties and board configuration
-- **Top Toolbar**: USB port selector, Upload, Download, Debug, RE buttons
-- **Bottom Console**: Real-time output and status messages
+### Interface Options
+1. **Terminal Interface** (Default): Full-featured text-based interface with ANSI colors
+2. **Simple GUI** (Optional): Custom lightweight rendering without external dependencies
 
-### Technology Stack
-- **GUI Framework**: Dear ImGui v1.90.1
-- **Windowing**: GLFW3
-- **Rendering**: OpenGL 3.3+
-- **Backend Integration**: All existing components (TextEditor, FileManager, Compiler, SerialMonitor)
+### Advanced Features
+- **Blueprint Editor**: Visual component editor for device layouts
+- **Device Component Previewer**: 3D/5D visualization of connected devices
+- **Scripting Engine**: Extensible scripting for automation
+- **Advanced Decompiler**: High-quality pseudo-code generation from firmware
 
-### Quick Start with GUI
+### Quick Start
 ```bash
-# Build and run
+# Build and run (Terminal UI - default)
 mkdir build && cd build
 cmake ..
 cmake --build .
 ./esp32-driver-ide
+
+# Build with Simple GUI (optional)
+cmake -DBUILD_WITH_SIMPLE_GUI=ON ..
+cmake --build .
+./esp32-driver-ide
 ```
 
-For detailed usage instructions, see **[IMGUI_GUIDE.md](IMGUI_GUIDE.md)**.
+## Architecture
 
-## Previous GUI Information
-
-The original implementation framework supports multiple GUI options:
+The system architecture supports multiple rendering backends:
 
 ### Platform Options
 

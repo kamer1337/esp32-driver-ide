@@ -19,6 +19,10 @@ set(COMMON_SOURCES
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
     src/utils/string_utils.cpp
+    src/renderer/pure_c_renderer.cpp
+    src/blueprint/blueprint_editor.cpp
+    src/scripting/scripting_engine.cpp
+    src/decompiler/advanced_decompiler.cpp
 )
 
 # GUI-specific sources
@@ -48,6 +52,10 @@ set(HEADERS
     src/gui/terminal_window.h
     src/gui/simple_gui_window.h
     src/utils/string_utils.h
+    src/renderer/pure_c_renderer.h
+    src/blueprint/blueprint_editor.h
+    src/scripting/scripting_engine.h
+    src/decompiler/advanced_decompiler.h
 )
 
 # Create executable
@@ -93,18 +101,7 @@ elseif(APPLE)
 elseif(UNIX)
     # Linux-specific settings
     target_compile_definitions(esp32-driver-ide PRIVATE PLATFORM_LINUX)
-    if(BUILD_WITH_SIMPLE_GUI)
-        # Link with X11 for Linux GUI
-        find_package(X11)
-        if(X11_FOUND)
-            target_link_libraries(esp32-driver-ide ${X11_LIBRARIES})
-            target_include_directories(esp32-driver-ide PRIVATE ${X11_INCLUDE_DIR})
-        else()
-            message(WARNING "X11 not found. Simple GUI will not be available on Linux. Install libx11-dev to enable.")
-            # Disable simple GUI if X11 is not available
-            target_compile_definitions(esp32-driver-ide PRIVATE X11_NOT_AVAILABLE)
-        endif()
-    endif()
+    # Note: Simple GUI on Linux uses framebuffer, no X11 required
 endif()
 
 # Add GUI build definition
