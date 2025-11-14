@@ -15,3 +15,16 @@ target_include_directories(basic_tests PRIVATE
 
 # Add test to CTest
 add_test(NAME BasicTests COMMAND basic_tests)
+
+# VM Emulator tests
+add_executable(vm_emulator_tests
+    vm_emulator_tests.cpp
+    ${CMAKE_SOURCE_DIR}/src/emulator/vm_emulator.cpp
+)
+
+target_include_directories(vm_emulator_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+# Add VM emulator test to CTest
+add_test(NAME VMEmulatorTests COMMAND vm_emulator_tests)
