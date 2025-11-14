@@ -142,7 +142,7 @@ private:
     // Parser and interpreter
     struct Token {
         enum class Type {
-            END,
+            END_OF_FILE,
             IDENTIFIER,
             NUMBER,
             STRING,
@@ -169,7 +169,6 @@ private:
             FOR,
             FUNCTION,
             RETURN,
-            END,
             NEWLINE,
             COLON
         };
@@ -179,8 +178,16 @@ private:
         int line;
     };
     
-    struct Expression;
-    struct Statement;
+    // Simple placeholder structures for Expression and Statement
+    struct Expression {
+        std::string type;
+        std::string value;
+    };
+    
+    struct Statement {
+        std::string type;
+        std::string value;
+    };
     
     // Lexer
     std::vector<Token> Tokenize(const std::string& source);
