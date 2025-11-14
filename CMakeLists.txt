@@ -12,7 +12,12 @@ option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32) instead o
 set(COMMON_SOURCES
     src/editor/text_editor.cpp
     src/editor/syntax_highlighter.cpp
+    src/editor/tab_manager.cpp
+    src/editor/autocomplete_engine.cpp
     src/file_manager/file_manager.cpp
+    src/file_manager/file_tree.cpp
+    src/file_manager/project_templates.cpp
+    src/collaboration/collaboration.cpp
     src/ai_assistant/ai_assistant.cpp
     src/compiler/esp32_compiler.cpp
     src/serial/serial_monitor.cpp
@@ -43,7 +48,12 @@ set(SOURCES
 set(HEADERS
     src/editor/text_editor.h
     src/editor/syntax_highlighter.h
+    src/editor/tab_manager.h
+    src/editor/autocomplete_engine.h
     src/file_manager/file_manager.h
+    src/file_manager/file_tree.h
+    src/file_manager/project_templates.h
+    src/collaboration/collaboration.h
     src/ai_assistant/ai_assistant.h
     src/compiler/esp32_compiler.h
     src/serial/serial_monitor.h
