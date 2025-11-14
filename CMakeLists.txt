@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
 option(BUILD_TESTS "Build test programs" OFF)
-option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32) instead of terminal UI" OFF)
+option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32) instead of terminal UI" ON)
+option(USE_TERMINAL_UI "Use terminal UI instead of GUI (overrides BUILD_WITH_SIMPLE_GUI)" OFF)
 
 # Common source files
 set(COMMON_SOURCES
@@ -25,6 +26,8 @@ set(COMMON_SOURCES
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
     src/gui/integrated_terminal.cpp
+    src/gui/device_library.cpp
+    src/gui/panel_system.cpp
     src/utils/string_utils.cpp
     src/renderer/pure_c_renderer.cpp
     src/blueprint/blueprint_editor.cpp
@@ -33,10 +36,17 @@ set(COMMON_SOURCES
 )
 
 # GUI-specific sources
-if(BUILD_WITH_SIMPLE_GUI)
-    set(GUI_SOURCES src/gui/simple_gui_window.cpp)
-else()
+if(USE_TERMINAL_UI)
     set(GUI_SOURCES src/gui/terminal_window.cpp)
+elseif(BUILD_WITH_SIMPLE_GUI)
+    set(GUI_SOURCES 
+        src/gui/simple_gui_window.cpp
+        src/gui/enhanced_gui_window.cpp
+    )
+else()
+    set(GUI_SOURCES 
+        src/gui/enhanced_gui_window.cpp
+    )
 endif()
 
 # Source files
@@ -65,6 +75,9 @@ set(HEADERS
     src/gui/integrated_terminal.h
     src/gui/terminal_window.h
     src/gui/simple_gui_window.h
+    src/gui/enhanced_gui_window.h
+    src/gui/device_library.h
+    src/gui/panel_system.h
     src/utils/string_utils.h
     src/renderer/pure_c_renderer.h
     src/blueprint/blueprint_editor.h
@@ -119,7 +132,9 @@ elseif(UNIX)
 endif()
 
 # Add GUI build definition
-if(BUILD_WITH_SIMPLE_GUI)
+if(USE_TERMINAL_UI)
+    target_compile_definitions(esp32-driver-ide PRIVATE USE_TERMINAL_UI)
+elseif(BUILD_WITH_SIMPLE_GUI)
     target_compile_definitions(esp32-driver-ide PRIVATE USE_SIMPLE_GUI)
 endif()
 
