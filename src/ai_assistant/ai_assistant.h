@@ -69,6 +69,13 @@ public:
         const std::string& current_line
     );
     
+    // Enhanced code generation
+    std::string GenerateCompleteSketch(const std::string& description);
+    std::string GenerateWebServerCode(const std::string& endpoint_description);
+    std::string GenerateMQTTCode(const std::string& topic);
+    std::string GenerateOTAUpdateCode();
+    std::string GenerateDeepSleepCode(int sleep_seconds);
+    
 private:
     std::vector<Message> history_;
     

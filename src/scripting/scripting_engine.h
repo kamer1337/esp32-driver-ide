@@ -142,7 +142,6 @@ private:
     // Parser and interpreter
     struct Token {
         enum class Type {
-            END_OF_FILE,
             IDENTIFIER,
             NUMBER,
             STRING,
@@ -187,6 +186,14 @@ private:
     struct Statement {
         std::string type;
         std::string value;
+    struct Expression {
+        // Minimal definition to avoid incomplete type
+        virtual ~Expression() = default;
+    };
+    
+    struct Statement {
+        // Minimal definition to avoid incomplete type
+        virtual ~Statement() = default;
     };
     
     // Lexer

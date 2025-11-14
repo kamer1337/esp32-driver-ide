@@ -14,6 +14,7 @@ set(COMMON_SOURCES
     src/editor/syntax_highlighter.cpp
     src/editor/tab_manager.cpp
     src/editor/autocomplete_engine.cpp
+    src/editor/collaboration.cpp
     src/file_manager/file_manager.cpp
     src/file_manager/file_tree.cpp
     src/file_manager/project_templates.cpp
@@ -23,6 +24,7 @@ set(COMMON_SOURCES
     src/serial/serial_monitor.cpp
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
+    src/gui/integrated_terminal.cpp
     src/utils/string_utils.cpp
     src/renderer/pure_c_renderer.cpp
     src/blueprint/blueprint_editor.cpp
@@ -50,6 +52,7 @@ set(HEADERS
     src/editor/syntax_highlighter.h
     src/editor/tab_manager.h
     src/editor/autocomplete_engine.h
+    src/editor/collaboration.h
     src/file_manager/file_manager.h
     src/file_manager/file_tree.h
     src/file_manager/project_templates.h
@@ -59,6 +62,7 @@ set(HEADERS
     src/serial/serial_monitor.h
     src/gui/main_window.h
     src/gui/console_widget.h
+    src/gui/integrated_terminal.h
     src/gui/terminal_window.h
     src/gui/simple_gui_window.h
     src/utils/string_utils.h
