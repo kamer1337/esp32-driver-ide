@@ -29,6 +29,10 @@ public:
         ESP32_S2,
         ESP32_S3,
         ESP32_C3,
+        ESP32_C2,
+        ESP32_C6,
+        ESP32_H2,
+        ESP32_P4,
         UNKNOWN
     };
     
@@ -56,10 +60,10 @@ public:
     static std::string GetDeviceTypeName(DeviceType type);
     
 private:
-    // Neural network structure: 8 inputs -> 16 hidden -> 4 outputs
+    // Neural network structure: 8 inputs -> 16 hidden -> 8 outputs
     static const int INPUT_SIZE = 8;
     static const int HIDDEN_SIZE = 16;
-    static const int OUTPUT_SIZE = 4;  // ESP32, S2, S3, C3
+    static const int OUTPUT_SIZE = 8;  // ESP32, S2, S3, C3, C2, C6, H2, P4
     
     // Pretrained weights (trained offline on device characteristics)
     // Hidden layer weights [INPUT_SIZE x HIDDEN_SIZE]

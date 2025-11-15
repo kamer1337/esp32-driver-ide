@@ -18,7 +18,11 @@ public:
         ESP32,
         ESP32_S2,
         ESP32_S3,
-        ESP32_C3
+        ESP32_C3,
+        ESP32_C2,
+        ESP32_C6,
+        ESP32_H2,
+        ESP32_P4
     };
     
     enum class CompileStatus {

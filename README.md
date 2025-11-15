@@ -43,11 +43,12 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 - **Smart Completion**: Context-aware code completion with ESP32-specific suggestions
 - **ML Device Detection**: Machine learning-based automatic device type detection with pretrained neural network
 
-#### Professional Debugging
+#### Professional Debugging & Device Support
 - **Breakpoint Support**: Set breakpoints on any line for step-through debugging
 - **Variable Watch**: Monitor variables in real-time during execution
 - **Memory Profiling**: Track heap usage, fragmentation, and memory leaks
 - **Performance Analysis**: Get performance scores and optimization suggestions
+- **Board Selection**: Support for ESP32, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-C2, ESP32-C6, ESP32-H2, and ESP32-P4
 
 ## Features
 
@@ -69,7 +70,7 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 ### ⚙️ ESP32 Development Tools
 - **Compile**: Syntax checking and compilation
 - **Upload**: Code uploading to ESP32 devices
-- **Board Selection**: Support for multiple ESP32 variants (ESP32, S2, S3, C3)
+- **Board Selection**: Support for multiple ESP32 variants (ESP32, S2, S3, C3, C2, C6, H2, P4)
 - **Serial Monitor**: Real-time serial communication with data streaming
 - **VM Emulator**: Virtual machine for testing device configurations without hardware
 - **ML Device Detection**: Automatic ESP32 variant detection using pretrained neural network model
@@ -77,7 +78,7 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 ### 🧠 Machine Learning Device Detection
 - **Pretrained Model**: Neural network trained for ESP32 device classification
 - **Feature Extraction**: Analyzes device characteristics from serial communication
-- **Multi-Variant Support**: Detects ESP32, ESP32-S2, ESP32-S3, and ESP32-C3
+- **Multi-Variant Support**: Detects ESP32, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-C2, ESP32-C6, ESP32-H2, and ESP32-P4
 - **Confidence Scores**: Provides reliability metrics for each detection
 - **Async Callbacks**: Non-blocking detection with callback support
 - **See [ML_DEVICE_DETECTION.md](ML_DEVICE_DETECTION.md)** for detailed documentation
