@@ -70,7 +70,7 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 ### ⚙️ ESP32 Development Tools
 - **Compile**: Syntax checking and compilation
 - **Upload**: Code uploading to ESP32 devices
-- **Board Selection**: Support for multiple ESP32 variants (ESP32, S2, S3, C3, C2, C6, H2, P4)
+- **Board Selection**: Support for 8 ESP32 variants - see [DEVICE_SUPPORT.md](DEVICE_SUPPORT.md) for details
 - **Serial Monitor**: Real-time serial communication with data streaming
 - **VM Emulator**: Virtual machine for testing device configurations without hardware
 - **ML Device Detection**: Automatic ESP32 variant detection using pretrained neural network model
@@ -78,7 +78,7 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 ### 🧠 Machine Learning Device Detection
 - **Pretrained Model**: Neural network trained for ESP32 device classification
 - **Feature Extraction**: Analyzes device characteristics from serial communication
-- **Multi-Variant Support**: Detects ESP32, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-C2, ESP32-C6, ESP32-H2, and ESP32-P4
+- **Multi-Variant Support**: Detects 8 ESP32 variants automatically - [DEVICE_SUPPORT.md](DEVICE_SUPPORT.md)
 - **Confidence Scores**: Provides reliability metrics for each detection
 - **Async Callbacks**: Non-blocking detection with callback support
 - **See [ML_DEVICE_DETECTION.md](ML_DEVICE_DETECTION.md)** for detailed documentation
