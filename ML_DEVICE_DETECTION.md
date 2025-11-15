@@ -10,12 +10,16 @@ The ESP32 Driver IDE now includes an advanced machine learning-based device dete
 - **Architecture**: Simple feedforward neural network
   - 8 input features
   - 16 hidden neurons with ReLU activation
-  - 4 output classes with softmax activation
+  - 8 output classes with softmax activation
 - **Supported Device Types**:
   - ESP32 (original)
-  - ESP32-S2
-  - ESP32-S3
-  - ESP32-C3
+  - ESP32-S2 (WiFi only, no Bluetooth)
+  - ESP32-S3 (WiFi + BLE, dual core)
+  - ESP32-C3 (WiFi + BLE, RISC-V)
+  - ESP32-C2 (WiFi + BLE, cost-optimized)
+  - ESP32-C6 (WiFi 6 + BLE 5 + Zigbee/Thread)
+  - ESP32-H2 (BLE + Zigbee/Thread, no WiFi)
+  - ESP32-P4 (High-performance, no wireless)
 
 ### Feature Extraction
 The system extracts 8 key features from device communication:
@@ -74,7 +78,7 @@ float confidence = model.GetConfidence(features, device_type);
 
 **`DeviceType Predict(const FeatureVector& features)`**
 - Predicts device type from feature vector
-- Returns: DeviceType enum (ESP32, ESP32_S2, ESP32_S3, ESP32_C3, UNKNOWN)
+- Returns: DeviceType enum (ESP32, ESP32_S2, ESP32_S3, ESP32_C3, ESP32_C2, ESP32_C6, ESP32_H2, ESP32_P4, UNKNOWN)
 
 **`float GetConfidence(const FeatureVector& features, DeviceType type)`**
 - Gets confidence score for a specific device type prediction
@@ -315,8 +319,8 @@ The pretrained model weights are embedded in `pretrained_model.cpp`. To retrain 
 The model uses three sets of weights:
 - `weights_input_hidden_` [8 × 16]: Input to hidden layer
 - `bias_hidden_` [16]: Hidden layer biases
-- `weights_hidden_output_` [16 × 4]: Hidden to output layer
-- `bias_output_` [4]: Output layer biases
+- `weights_hidden_output_` [16 × 8]: Hidden to output layer
+- `bias_output_` [8]: Output layer biases
 
 ## Performance Considerations
 
@@ -336,8 +340,8 @@ The model uses three sets of weights:
 Potential improvements:
 - Real serial port integration (libserial, boost::asio)
 - More sophisticated feature extraction
-- Support for additional ESP32 variants (ESP32-H2, etc.)
-- Model retraining with real device data
+- Support for additional ESP32 variants as they are released
+- Model retraining with real device data for improved accuracy
 - Confidence calibration
 - Ensemble methods for improved accuracy
 

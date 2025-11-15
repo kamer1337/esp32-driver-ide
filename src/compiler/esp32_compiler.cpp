@@ -84,6 +84,10 @@ std::string ESP32Compiler::GetBoardName(BoardType board) const {
         case BoardType::ESP32_S2: return "ESP32-S2";
         case BoardType::ESP32_S3: return "ESP32-S3";
         case BoardType::ESP32_C3: return "ESP32-C3";
+        case BoardType::ESP32_C2: return "ESP32-C2";
+        case BoardType::ESP32_C6: return "ESP32-C6";
+        case BoardType::ESP32_H2: return "ESP32-H2";
+        case BoardType::ESP32_P4: return "ESP32-P4";
         default:                  return "Unknown Board";
     }
 }

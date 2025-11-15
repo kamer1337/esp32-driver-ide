@@ -33,32 +33,36 @@ void PretrainedModel::InitializeWeights() {
         0.1f, 0.3f, -0.4f, 0.2f, -0.1f, 0.3f, -0.2f, 0.1f
     };
     
-    // Hidden to output layer weights [16 x 4]
+    // Hidden to output layer weights [16 x 8]
     weights_hidden_output_ = {
-        {0.8f, -0.3f, 0.2f, -0.5f},   // ESP32, S2, S3, C3 weights from hidden neuron 0
-        {-0.4f, 0.7f, 0.3f, -0.2f},
-        {0.5f, -0.2f, 0.6f, 0.3f},
-        {-0.3f, 0.4f, -0.5f, 0.8f},
-        {0.6f, 0.2f, -0.4f, 0.5f},
-        {-0.2f, 0.5f, 0.7f, -0.3f},
-        {0.7f, -0.4f, 0.3f, 0.2f},
-        {-0.5f, 0.6f, -0.2f, 0.7f},
-        {0.4f, 0.3f, -0.6f, 0.4f},
-        {-0.3f, 0.8f, 0.4f, -0.2f},
-        {0.5f, -0.2f, 0.7f, 0.3f},
-        {-0.6f, 0.4f, -0.3f, 0.6f},
-        {0.3f, 0.5f, -0.5f, 0.4f},
-        {-0.4f, 0.2f, 0.6f, -0.5f},
-        {0.6f, -0.5f, 0.4f, 0.3f},
-        {-0.2f, 0.7f, -0.3f, 0.5f}
+        {0.8f, -0.3f, 0.2f, -0.5f, 0.4f, -0.2f, 0.3f, -0.4f},   // ESP32, S2, S3, C3, C2, C6, H2, P4 weights from hidden neuron 0
+        {-0.4f, 0.7f, 0.3f, -0.2f, 0.5f, 0.2f, -0.3f, 0.4f},
+        {0.5f, -0.2f, 0.6f, 0.3f, -0.4f, 0.5f, 0.2f, -0.3f},
+        {-0.3f, 0.4f, -0.5f, 0.8f, 0.2f, -0.4f, 0.6f, 0.3f},
+        {0.6f, 0.2f, -0.4f, 0.5f, 0.7f, 0.3f, -0.2f, 0.4f},
+        {-0.2f, 0.5f, 0.7f, -0.3f, 0.4f, 0.6f, 0.2f, -0.5f},
+        {0.7f, -0.4f, 0.3f, 0.2f, -0.5f, 0.4f, 0.6f, 0.3f},
+        {-0.5f, 0.6f, -0.2f, 0.7f, 0.3f, -0.4f, 0.5f, 0.2f},
+        {0.4f, 0.3f, -0.6f, 0.4f, 0.5f, 0.2f, -0.3f, 0.6f},
+        {-0.3f, 0.8f, 0.4f, -0.2f, 0.6f, 0.5f, 0.3f, -0.4f},
+        {0.5f, -0.2f, 0.7f, 0.3f, -0.4f, 0.6f, 0.4f, 0.2f},
+        {-0.6f, 0.4f, -0.3f, 0.6f, 0.2f, -0.5f, 0.7f, 0.3f},
+        {0.3f, 0.5f, -0.5f, 0.4f, 0.6f, 0.3f, -0.2f, 0.5f},
+        {-0.4f, 0.2f, 0.6f, -0.5f, 0.3f, 0.7f, 0.4f, -0.2f},
+        {0.6f, -0.5f, 0.4f, 0.3f, -0.2f, 0.5f, 0.3f, 0.6f},
+        {-0.2f, 0.7f, -0.3f, 0.5f, 0.4f, -0.3f, 0.6f, 0.2f}
     };
     
-    // Output layer biases [4]
+    // Output layer biases [8]
     bias_output_ = {
         0.2f,   // ESP32
         -0.1f,  // ESP32-S2
         0.1f,   // ESP32-S3
-        -0.2f   // ESP32-C3
+        -0.2f,  // ESP32-C3
+        0.15f,  // ESP32-C2
+        -0.15f, // ESP32-C6
+        0.1f,   // ESP32-H2
+        -0.1f   // ESP32-P4
     };
 }
 
@@ -145,6 +149,10 @@ PretrainedModel::DeviceType PretrainedModel::Predict(const FeatureVector& featur
         case 1: return DeviceType::ESP32_S2;
         case 2: return DeviceType::ESP32_S3;
         case 3: return DeviceType::ESP32_C3;
+        case 4: return DeviceType::ESP32_C2;
+        case 5: return DeviceType::ESP32_C6;
+        case 6: return DeviceType::ESP32_H2;
+        case 7: return DeviceType::ESP32_P4;
         default: return DeviceType::UNKNOWN;
     }
 }
@@ -158,6 +166,10 @@ float PretrainedModel::GetConfidence(const FeatureVector& features, DeviceType t
         case DeviceType::ESP32_S2: type_idx = 1; break;
         case DeviceType::ESP32_S3: type_idx = 2; break;
         case DeviceType::ESP32_C3: type_idx = 3; break;
+        case DeviceType::ESP32_C2: type_idx = 4; break;
+        case DeviceType::ESP32_C6: type_idx = 5; break;
+        case DeviceType::ESP32_H2: type_idx = 6; break;
+        case DeviceType::ESP32_P4: type_idx = 7; break;
         default: return 0.0f;
     }
     
@@ -170,6 +182,10 @@ std::string PretrainedModel::GetDeviceTypeName(DeviceType type) {
         case DeviceType::ESP32_S2: return "ESP32-S2";
         case DeviceType::ESP32_S3: return "ESP32-S3";
         case DeviceType::ESP32_C3: return "ESP32-C3";
+        case DeviceType::ESP32_C2: return "ESP32-C2";
+        case DeviceType::ESP32_C6: return "ESP32-C6";
+        case DeviceType::ESP32_H2: return "ESP32-H2";
+        case DeviceType::ESP32_P4: return "ESP32-P4";
         case DeviceType::UNKNOWN: return "Unknown";
         default: return "Invalid";
     }

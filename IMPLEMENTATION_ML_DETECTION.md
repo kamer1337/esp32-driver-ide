@@ -21,8 +21,8 @@ A complete ML-based device detection system with:
 **Architecture**:
 - Input Layer: 8 features (baud rate, response time, memory, etc.)
 - Hidden Layer: 16 neurons with ReLU activation
-- Output Layer: 4 classes with Softmax activation
-- Total Parameters: ~200 weights and biases
+- Output Layer: 8 classes with Softmax activation
+- Total Parameters: ~280 weights and biases
 
 **Features Extracted**:
 1. Baud rate compatibility score
@@ -37,8 +37,12 @@ A complete ML-based device detection system with:
 **Supported Device Types**:
 - ESP32 (original)
 - ESP32-S2 (WiFi only, no Bluetooth)
-- ESP32-S3 (WiFi + BLE, more memory)
-- ESP32-C3 (RISC-V, WiFi + BLE)
+- ESP32-S3 (WiFi + BLE, dual core)
+- ESP32-C3 (WiFi + BLE, RISC-V)
+- ESP32-C2 (WiFi + BLE, cost-optimized)
+- ESP32-C6 (WiFi 6 + BLE 5 + Zigbee/Thread)
+- ESP32-H2 (BLE + Zigbee/Thread, no WiFi)
+- ESP32-P4 (High-performance, no wireless)
 
 **Key Methods**:
 ```cpp
