@@ -2,6 +2,33 @@
 
 A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **terminal-based interface with no external GUI dependencies**.
 
+## 📸 Screenshots
+
+<div align="center">
+
+### Code Editor with Syntax Highlighting
+![Code Editor](screenshots/06_code_editor.png)
+
+### AI Assistant - Context-Aware Help
+![AI Assistant](screenshots/05_ai_assistant.png)
+
+### Serial Monitor - Real-Time Communication
+![Serial Monitor](screenshots/07_serial_monitor.png)
+
+### ML Device Detection - Automatic Board Recognition
+![ML Device Detection](screenshots/03_ml_device_detection.png)
+
+### Blueprint Editor - Visual Component Layout
+![Blueprint Editor](screenshots/09_blueprint_editor.png)
+
+### Advanced Decompiler - Firmware Analysis
+![Decompiler](screenshots/08_decompiler.png)
+
+### Board Selection - Multi-Platform Support
+![Board Selection](screenshots/10_board_selection.png)
+
+</div>
+
 ## ✨ Latest Update: Pure C++ with Custom GUI Option (November 2025)
 
 **🎨 Zero External Dependencies**: Complete reimplementation with pure C++ and optional lightweight native GUI!
@@ -13,6 +40,52 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 2. **Simple GUI** (Optional): Lightweight native GUI using X11 (Linux) or Win32 (Windows)
 
 **📦 Easy Build**: Single command build with no external dependencies to install!
+
+## 🎯 Quick Look at Key Features
+
+### 💡 Feature Demonstrations
+
+<details>
+<summary><b>🎨 Complete IDE Demo</b> - See all features in action</summary>
+
+![IDE Demo](screenshots/01_ide_demo.png)
+
+Demonstrates:
+- Text editor with syntax highlighting
+- File manager with multiple files
+- AI assistant queries and code analysis
+- ESP32 compiler with error checking
+- Serial monitor communication
+
+</details>
+
+<details>
+<summary><b>🖥️ Virtual Machine Emulator</b> - Test without hardware</summary>
+
+![VM Emulator](screenshots/02_vm_emulator.png)
+
+Features:
+- Complete ESP32 device emulation
+- GPIO, PWM, and ADC simulation
+- WiFi and Bluetooth simulation
+- Memory management tracking
+- Peripheral configuration testing
+
+</details>
+
+<details>
+<summary><b>🎨 Enhanced GUI Features</b> - Professional development environment</summary>
+
+![Enhanced GUI](screenshots/04_enhanced_gui.png)
+
+Includes:
+- Device library management
+- Panel system with docking
+- Device preview modes
+- Code generation from components
+- Schematic visualization
+
+</details>
 
 ## Features
 
