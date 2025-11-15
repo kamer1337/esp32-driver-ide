@@ -23,6 +23,7 @@ set(COMMON_SOURCES
     src/ai_assistant/ai_assistant.cpp
     src/compiler/esp32_compiler.cpp
     src/serial/serial_monitor.cpp
+    src/emulator/vm_emulator.cpp
     src/gui/main_window.cpp
     src/gui/console_widget.cpp
     src/gui/integrated_terminal.cpp
@@ -70,6 +71,7 @@ set(HEADERS
     src/ai_assistant/ai_assistant.h
     src/compiler/esp32_compiler.h
     src/serial/serial_monitor.h
+    src/emulator/vm_emulator.h
     src/gui/main_window.h
     src/gui/console_widget.h
     src/gui/integrated_terminal.h
@@ -140,6 +142,16 @@ endif()
 
 # Install rules
 install(TARGETS esp32-driver-ide esp32-driver-ide-demo DESTINATION bin)
+
+# VM Emulator demo executable
+add_executable(esp32-vm-emulator-demo
+    src/vm_emulator_demo.cpp
+    src/emulator/vm_emulator.cpp
+)
+
+target_include_directories(esp32-vm-emulator-demo PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 # Feature test executable
 add_executable(esp32-driver-ide-feature-test

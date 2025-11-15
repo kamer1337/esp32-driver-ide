@@ -70,6 +70,15 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 - **Upload**: Code uploading to ESP32 devices
 - **Board Selection**: Support for multiple ESP32 variants (ESP32, S2, S3, C3)
 - **Serial Monitor**: Real-time serial communication with data streaming
+- **VM Emulator**: Virtual machine for testing device configurations without hardware
+
+### 🖥️ Virtual Machine Emulator
+- **Device Emulation**: Test code without physical ESP32 hardware
+- **GPIO Simulation**: Pin mode, state, PWM, and ADC simulation
+- **WiFi/Bluetooth**: Wireless communication simulation
+- **Memory Management**: Heap, PSRAM, and fragmentation tracking
+- **Configuration Testing**: Validate device configurations before deployment
+- **See [VM_EMULATOR.md](VM_EMULATOR.md)** for detailed documentation
 
 ### 📁 File Management
 - **Create/Open/Save Files**: Complete file management
@@ -219,6 +228,7 @@ src/
 - [x] Syntax error highlighting ✅ **NEW**
 - [x] Enhanced autocomplete ✅ **NEW**
 - [x] Integrated terminal ✅ **NEW**
+- [x] Virtual machine emulator for testing ✅ **NEW**
 
 All roadmap items are now complete! See [NEW_FEATURES.md](NEW_FEATURES.md) for details on the latest additions.
 
