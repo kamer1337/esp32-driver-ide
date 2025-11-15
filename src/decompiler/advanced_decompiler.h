@@ -231,6 +231,8 @@ private:
     std::string GeneratePseudoCode(Function* func);
     std::string GenerateBlockPseudoCode(const BasicBlock* block);
     std::string GenerateInstructionPseudoCode(const Instruction& inst);
+    void GenerateStructuredCode(std::ostringstream& oss, BasicBlock* block, 
+                               std::set<BasicBlock*>& visited, int indent_level);
     
     // Helper functions
     bool IsValidCodeAddress(uint32_t address) const;
