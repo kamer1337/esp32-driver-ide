@@ -258,6 +258,157 @@ The IDE features a **pure C++ implementation with custom rendering** supporting:
 - **Scripting Engine**: Extensible scripting for automation
 - **Advanced Decompiler**: High-quality pseudo-code generation from firmware
 
+### Decompiler Sample Output
+
+The Advanced Decompiler analyzes ESP32 firmware binaries and generates readable pseudo-code. Here are examples of what it produces:
+
+#### Example 1: Simple GPIO Control
+**Input**: Binary firmware with GPIO operations  
+**Output**: Decompiled pseudo-code
+```c
+/*
+ * Function: gpio_control_task
+ * Address: 0x400d0100
+ * Type: FreeRTOS Task
+ */
+void gpio_control_task() {
+    pin = 2;
+    level = 1;
+    gpio_set_level(pin, level);
+    delay_ms = 1000;
+    vTaskDelay(pdMS_TO_TICKS(delay_ms));
+    level = 0;
+    gpio_set_level(pin, level);
+    vTaskDelay(pdMS_TO_TICKS(delay_ms));
+}
+```
+
+#### Example 2: UART Communication
+**Input**: Binary firmware with UART operations  
+**Output**: Decompiled pseudo-code
+```c
+/*
+ * Function: uart_send_data
+ * Address: 0x400d0200
+ */
+void uart_send_data() {
+    uart_num = 0;
+    data = "Hello ESP32";
+    length = 11;
+    uart_write_bytes(uart_num, data, length);
+    
+    // Wait for transmission
+    delay_ms = 100;
+    vTaskDelay(pdMS_TO_TICKS(delay_ms));
+}
+```
+
+#### Example 3: WiFi Connection
+**Input**: Binary firmware with WiFi initialization  
+**Output**: Decompiled pseudo-code
+```c
+/*
+ * Function: wifi_init_sta
+ * Address: 0x400d0300
+ */
+void wifi_init_sta() {
+    ssid = "MyNetwork";
+    password = "MyPassword";
+    
+    // Initialize WiFi
+    esp_wifi_init();
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    
+    // Configure and connect
+    WiFi.begin(ssid, password);
+    
+    // Wait for connection
+    while (status != WL_CONNECTED) {
+        vTaskDelay(pdMS_TO_TICKS(500));
+        status = WiFi.status();
+    }
+}
+```
+
+#### Example 4: FreeRTOS Task with Interrupt Handler
+**Input**: Binary firmware with ISR and task  
+**Output**: Decompiled pseudo-code
+```c
+/*
+ * Function: button_isr_handler
+ * Address: 0x400d0400
+ * Type: Interrupt Service Routine
+ */
+void button_isr_handler() {
+    // Read GPIO state
+    gpio_num = 0;
+    state = gpio_get_level(gpio_num);
+    
+    // Set flag
+    button_pressed = 1;
+}
+
+/*
+ * Function: button_task
+ * Address: 0x400d0450
+ * Type: FreeRTOS Task
+ */
+void button_task() {
+    while (1) {
+        if (button_pressed == 1) {
+            // Handle button press
+            led_pin = 2;
+            gpio_set_level(led_pin, 1);
+            
+            // Reset flag
+            button_pressed = 0;
+            
+            // Debounce delay
+            vTaskDelay(pdMS_TO_TICKS(50));
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+```
+
+#### Example 5: Complex Arithmetic and Control Flow
+**Input**: Binary firmware with conditional logic  
+**Output**: Decompiled pseudo-code
+```c
+/*
+ * Function: sensor_processing
+ * Address: 0x400d0500
+ */
+void sensor_processing() {
+    // Read sensor value
+    sensor_value = adc_read();
+    
+    // Apply calibration
+    calibrated = sensor_value * 3.3 / 4095;
+    
+    // Conditional processing
+    if (calibrated > 2.5) {
+        threshold_exceeded = 1;
+        gpio_set_level(alarm_pin, 1);
+    } else {
+        threshold_exceeded = 0;
+        gpio_set_level(alarm_pin, 0);
+    }
+    
+    // Store result
+    last_reading = calibrated;
+}
+```
+
+The decompiler automatically detects:
+- ESP32 API calls (GPIO, UART, WiFi, I2C, SPI, Timer)
+- FreeRTOS patterns (tasks, delays, queues, semaphores)
+- Interrupt service routines
+- Control flow structures (if/else, loops)
+- Variable types and operations
+
+For detailed decompiler documentation, see [DECOMPILER_GUIDE.md](DECOMPILER_GUIDE.md).
+
 ### Quick Start
 ```bash
 # Build and run (Terminal UI - default)
