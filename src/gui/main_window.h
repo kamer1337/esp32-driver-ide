@@ -9,6 +9,8 @@
 #include "serial/serial_monitor.h"
 #include "emulator/vm_emulator.h"
 #include "gui/console_widget.h"
+#include "blueprint/blueprint_editor.h"
+#include "utils/ml_device_detector.h"
 #include <memory>
 #include <string>
 
@@ -55,6 +57,11 @@ public:
     void OnStopEmulator();
     void OnTestInEmulator();
     
+    // Blueprint Editor actions
+    void OnOpenBlueprintEditor();
+    void OnLoadConnectedDeviceToBlueprint();
+    void OnDetectAndLoadDevice(const std::string& port);
+    
 private:
     // Components
     std::unique_ptr<TextEditor> editor_;
@@ -65,6 +72,8 @@ private:
     std::unique_ptr<SerialMonitor> serial_monitor_;
     std::unique_ptr<VMEmulator> vm_emulator_;
     std::unique_ptr<ConsoleWidget> console_;
+    std::unique_ptr<blueprint::BlueprintEditor> blueprint_editor_;
+    std::unique_ptr<ml::MLDeviceDetector> device_detector_;
     
     // Window state
     bool is_running_;

@@ -472,6 +472,97 @@ void BlueprintEditor::SaveState() {
     }
 }
 
+bool BlueprintEditor::LoadConnectedDevice(const std::string& device_name, const std::string& device_type) {
+    SaveState();
+    
+    // Clear any previously loaded device
+    ClearConnectedDevice();
+    
+    // Store device info
+    connected_device_name_ = device_name;
+    connected_device_type_ = device_type;
+    
+    // Determine component type based on device type
+    ComponentType comp_type = ComponentType::ESP32_BOARD;
+    
+    // Map device type string to ComponentType
+    if (device_type.find("ESP32-S2") != std::string::npos) {
+        comp_type = ComponentType::ESP32_BOARD;
+    } else if (device_type.find("ESP32-S3") != std::string::npos) {
+        comp_type = ComponentType::ESP32_BOARD;
+    } else if (device_type.find("ESP32-C3") != std::string::npos) {
+        comp_type = ComponentType::ESP32_BOARD;
+    } else if (device_type.find("ESP32-C2") != std::string::npos) {
+        comp_type = ComponentType::ESP32_BOARD;
+    } else if (device_type.find("ESP32-C6") != std::string::npos) {
+        comp_type = ComponentType::ESP32_BOARD;
+    } else if (device_type.find("ESP32-H2") != std::string::npos) {
+        comp_type = ComponentType::ESP32_BOARD;
+    } else if (device_type.find("ESP32-P4") != std::string::npos) {
+        comp_type = ComponentType::ESP32_BOARD;
+    } else if (device_type.find("ESP32") != std::string::npos) {
+        comp_type = ComponentType::ESP32_BOARD;
+    }
+    
+    // Create a component for the detected device
+    std::string id = GenerateUniqueId("C");
+    connected_device_component_id_ = id;
+    
+    auto component = std::make_unique<Component>(id, comp_type, device_name);
+    component->SetPosition(200, 200);  // Center position
+    component->SetProperty("device_type", device_type);
+    component->SetProperty("connected", "true");
+    component->SetProperty("detected_via", "serial");
+    
+    // Add pins based on board type
+    if (comp_type == ComponentType::ESP32_BOARD) {
+        // Add standard ESP32 GPIO pins
+        for (int i = 0; i < 40; i++) {
+            component->AddPin("GPIO" + std::to_string(i), "GPIO" + std::to_string(i));
+        }
+        // Add power pins
+        component->AddPin("3V3", "3.3V Power");
+        component->AddPin("5V", "5V Power");
+        component->AddPin("GND", "Ground");
+        component->AddPin("VIN", "Voltage Input");
+    }
+    
+    current_blueprint_->AddComponent(std::move(component));
+    
+    // Update blueprint name and description
+    current_blueprint_->SetName("Connected Device: " + device_name);
+    current_blueprint_->SetDescription("Blueprint automatically generated from connected device detected as: " + device_type);
+    
+    return true;
+}
+
+std::string BlueprintEditor::GetConnectedDeviceInfo() const {
+    if (connected_device_name_.empty()) {
+        return "No connected device loaded";
+    }
+    
+    std::ostringstream info;
+    info << "Connected Device Information:\n";
+    info << "  Name: " << connected_device_name_ << "\n";
+    info << "  Type: " << connected_device_type_ << "\n";
+    info << "  Component ID: " << connected_device_component_id_ << "\n";
+    info << "\nThe device has been loaded into the blueprint editor.\n";
+    info << "You can now add additional components and create connections.";
+    
+    return info.str();
+}
+
+void BlueprintEditor::ClearConnectedDevice() {
+    if (!connected_device_component_id_.empty()) {
+        // Remove the connected device component
+        current_blueprint_->RemoveComponent(connected_device_component_id_);
+        connected_device_component_id_.clear();
+    }
+    
+    connected_device_name_.clear();
+    connected_device_type_.clear();
+}
+
 // BlueprintPreviewer implementation
 BlueprintPreviewer::BlueprintPreviewer()
     : blueprint_(nullptr), view_mode_(ViewMode::SCHEMATIC_2D) {
