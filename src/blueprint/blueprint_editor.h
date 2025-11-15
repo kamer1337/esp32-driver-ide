@@ -214,6 +214,11 @@ public:
     // Component library
     static std::vector<ComponentType> GetAvailableComponentTypes();
     static std::string GetComponentTypeName(ComponentType type);
+    
+    // Connected device integration
+    bool LoadConnectedDevice(const std::string& device_name, const std::string& device_type);
+    std::string GetConnectedDeviceInfo() const;
+    void ClearConnectedDevice();
 
 private:
     std::unique_ptr<Blueprint> current_blueprint_;
@@ -234,6 +239,11 @@ private:
     void SaveState();
     int next_component_id_;
     int next_connection_id_;
+    
+    // Connected device tracking
+    std::string connected_device_name_;
+    std::string connected_device_type_;
+    std::string connected_device_component_id_;
 };
 
 /**
