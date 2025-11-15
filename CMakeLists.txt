@@ -196,6 +196,16 @@ target_include_directories(esp32-ml-device-detection-test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# Decompiler test executable
+add_executable(esp32-decompiler-test
+    src/decompiler_test.cpp
+    src/decompiler/advanced_decompiler.cpp
+)
+
+target_include_directories(esp32-decompiler-test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 # Testing
 if(BUILD_TESTS)
     enable_testing()
