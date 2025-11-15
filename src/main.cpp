@@ -2,6 +2,9 @@
 #ifdef USE_SIMPLE_GUI
 #include "gui/simple_gui_window.h"
 #endif
+#ifndef USE_TERMINAL_UI
+#include "gui/enhanced_gui_window.h"
+#endif
 #include "editor/text_editor.h"
 #include "editor/syntax_highlighter.h"
 #include "file_manager/file_manager.h"
@@ -11,10 +14,10 @@
 #include <memory>
 
 int main(int argc, char* argv[]) {
-#ifdef USE_SIMPLE_GUI
-    std::cout << "Starting ESP32 Driver IDE (Simple GUI Version)...\n\n";
-#else
+#ifdef USE_TERMINAL_UI
     std::cout << "Starting ESP32 Driver IDE (Terminal Version)...\n\n";
+#else
+    std::cout << "Starting ESP32 Driver IDE (Enhanced GUI Version)...\n\n";
 #endif
     
     try {
@@ -28,22 +31,22 @@ int main(int argc, char* argv[]) {
         // Create default sketch
         file_manager->CreateFile("sketch.ino", esp32_ide::FileManager::GetDefaultSketch());
         
-#ifdef USE_SIMPLE_GUI
-        // Create simple GUI window
-        auto window = std::make_unique<esp32_ide::gui::SimpleGuiWindow>();
-        
-        // Initialize window
-        if (!window->Initialize(1024, 768)) {
-            std::cerr << "Failed to initialize simple GUI window\n";
-            return 1;
-        }
-#else
+#ifdef USE_TERMINAL_UI
         // Create terminal window
         auto window = std::make_unique<esp32_ide::gui::TerminalWindow>();
         
         // Initialize terminal window
         if (!window->Initialize(80, 24)) {
             std::cerr << "Failed to initialize terminal window\n";
+            return 1;
+        }
+#else
+        // Create enhanced GUI window
+        auto window = std::make_unique<esp32_ide::gui::EnhancedGuiWindow>();
+        
+        // Initialize enhanced GUI window
+        if (!window->Initialize(1280, 800)) {
+            std::cerr << "Failed to initialize enhanced GUI window\n";
             return 1;
         }
 #endif

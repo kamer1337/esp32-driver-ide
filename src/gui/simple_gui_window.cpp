@@ -16,9 +16,13 @@
     // macOS Cocoa includes would go here
     #include <CoreGraphics/CoreGraphics.h>
 #elif defined(__linux__) && !defined(X11_NOT_AVAILABLE)
-    #include <X11/Xlib.h>
-    #include <X11/Xutil.h>
-    #include <X11/Xos.h>
+    #if __has_include(<X11/Xlib.h>)
+        #include <X11/Xlib.h>
+        #include <X11/Xutil.h>
+        #include <X11/Xos.h>
+    #else
+        #define X11_NOT_AVAILABLE
+    #endif
 #endif
 
 namespace esp32_ide {
