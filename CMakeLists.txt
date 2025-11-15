@@ -30,6 +30,8 @@ set(COMMON_SOURCES
     src/gui/device_library.cpp
     src/gui/panel_system.cpp
     src/utils/string_utils.cpp
+    src/utils/pretrained_model.cpp
+    src/utils/ml_device_detector.cpp
     src/renderer/pure_c_renderer.cpp
     src/blueprint/blueprint_editor.cpp
     src/scripting/scripting_engine.cpp
@@ -81,6 +83,8 @@ set(HEADERS
     src/gui/device_library.h
     src/gui/panel_system.h
     src/utils/string_utils.h
+    src/utils/pretrained_model.h
+    src/utils/ml_device_detector.h
     src/renderer/pure_c_renderer.h
     src/blueprint/blueprint_editor.h
     src/scripting/scripting_engine.h
@@ -178,6 +182,17 @@ add_executable(esp32-driver-ide-enhanced-test
 )
 
 target_include_directories(esp32-driver-ide-enhanced-test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+# ML Device Detection test executable
+add_executable(esp32-ml-device-detection-test
+    src/ml_device_detection_test.cpp
+    src/utils/pretrained_model.cpp
+    src/utils/ml_device_detector.cpp
+)
+
+target_include_directories(esp32-ml-device-detection-test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

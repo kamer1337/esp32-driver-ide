@@ -41,6 +41,7 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 - **Bug Detection**: Detects common ESP32 bugs before compilation with auto-fix
 - **Code Templates**: Built-in templates for WiFi, sensors, LED, web servers
 - **Smart Completion**: Context-aware code completion with ESP32-specific suggestions
+- **ML Device Detection**: Machine learning-based automatic device type detection with pretrained neural network
 
 #### Professional Debugging
 - **Breakpoint Support**: Set breakpoints on any line for step-through debugging
@@ -71,6 +72,15 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 - **Board Selection**: Support for multiple ESP32 variants (ESP32, S2, S3, C3)
 - **Serial Monitor**: Real-time serial communication with data streaming
 - **VM Emulator**: Virtual machine for testing device configurations without hardware
+- **ML Device Detection**: Automatic ESP32 variant detection using pretrained neural network model
+
+### 🧠 Machine Learning Device Detection
+- **Pretrained Model**: Neural network trained for ESP32 device classification
+- **Feature Extraction**: Analyzes device characteristics from serial communication
+- **Multi-Variant Support**: Detects ESP32, ESP32-S2, ESP32-S3, and ESP32-C3
+- **Confidence Scores**: Provides reliability metrics for each detection
+- **Async Callbacks**: Non-blocking detection with callback support
+- **See [ML_DEVICE_DETECTION.md](ML_DEVICE_DETECTION.md)** for detailed documentation
 
 ### 🖥️ Virtual Machine Emulator
 - **Device Emulation**: Test code without physical ESP32 hardware
@@ -229,6 +239,7 @@ src/
 - [x] Enhanced autocomplete ✅ **NEW**
 - [x] Integrated terminal ✅ **NEW**
 - [x] Virtual machine emulator for testing ✅ **NEW**
+- [x] ML device detection with pretrained model ✅ **NEW**
 
 All roadmap items are now complete! See [NEW_FEATURES.md](NEW_FEATURES.md) for details on the latest additions.
 
