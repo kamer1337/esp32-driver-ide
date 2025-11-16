@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
 option(BUILD_TESTS "Build test programs" OFF)
-option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32) instead of terminal UI" ON)
-option(USE_TERMINAL_UI "Use terminal UI instead of GUI (overrides BUILD_WITH_SIMPLE_GUI)" OFF)
+option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32)" ON)
+option(USE_TERMINAL_UI "Use terminal UI instead of enhanced GUI (overrides BUILD_WITH_SIMPLE_GUI)" OFF)
 
 # Common source files
 set(COMMON_SOURCES
