@@ -1,6 +1,6 @@
 # ESP32 Driver IDE (C++ Version)
 
-A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **terminal-based interface with no external GUI dependencies**.
+A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **enhanced GUI interface with optional terminal mode**.
 
 ## 📸 Screenshots
 
@@ -29,15 +29,15 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 
 </div>
 
-## ✨ Latest Update: Pure C++ with Custom GUI Option (November 2025)
+## ✨ Latest Update: Pure C++ with Enhanced GUI (November 2025)
 
-**🎨 Zero External Dependencies**: Complete reimplementation with pure C++ and optional lightweight native GUI!
+**🎨 Professional GUI Interface**: Complete reimplementation with enhanced GUI as the default interface!
 
-**🚀 Lightweight & Fast**: Pure C++ with zero external dependencies - no GUI frameworks required!
+**🚀 Lightweight & Fast**: Pure C++ with minimal dependencies - native GUI frameworks only!
 
 **💻 Two Interface Options**: 
-1. **Terminal Interface** (Default): Interactive menu system with ANSI color support
-2. **Simple GUI** (Optional): Lightweight native GUI using X11 (Linux) or Win32 (Windows)
+1. **Enhanced GUI** (Default): Professional graphical interface with panels, device library, and visual tools
+2. **Terminal Interface** (Optional): Interactive menu system with ANSI color support
 
 **📦 Easy Build**: Single command build with no external dependencies to install!
 
@@ -91,7 +91,14 @@ Includes:
 
 ### Interface Options
 
-#### Terminal-Based Interface (Default)
+#### Enhanced GUI (Default)
+- **Native Platform APIs**: X11 on Linux, Win32 on Windows
+- **Professional Interface**: Multi-panel layout with device library and visual tools
+- **Dark Theme**: Professional appearance optimized for coding
+- **Interactive**: Mouse and keyboard support
+- **Advanced Features**: Blueprint editor, device previewer, schematic visualization
+
+#### Terminal Interface (Optional Build)
 - **Interactive Menu System**: Easy-to-use text-based interface
 - **Color-Coded Output**: ANSI escape codes for visual feedback
 - **File Browser**: Browse and open project files
@@ -99,12 +106,9 @@ Includes:
 - **Console Output**: View compilation and runtime messages
 - **Serial Monitor**: Connect and communicate with ESP32 devices
 
-#### Simple GUI (Optional Build)
-- **Native Platform APIs**: X11 on Linux, Win32 on Windows
+#### Simple GUI (Optional)
 - **Lightweight**: No external GUI frameworks required
-- **Dark Theme**: Professional appearance optimized for coding
 - **Multi-Panel Layout**: Menu bar, toolbar, editor, console, file list
-- **Interactive**: Mouse and keyboard support
 
 ### Core Functionality
 
@@ -484,9 +488,14 @@ For detailed decompiler documentation, see [DECOMPILER_GUIDE.md](DECOMPILER_GUID
 
 ### Quick Start
 ```bash
-# Build and run (Terminal UI - default)
+# Build and run (Enhanced GUI - default)
 mkdir build && cd build
 cmake ..
+cmake --build .
+./esp32-driver-ide
+
+# Build with Terminal UI (optional)
+cmake -DUSE_TERMINAL_UI=ON ..
 cmake --build .
 ./esp32-driver-ide
 
