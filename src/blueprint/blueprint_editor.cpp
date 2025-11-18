@@ -3,6 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 
 namespace esp32_ide {
 namespace blueprint {
@@ -219,9 +220,117 @@ bool Blueprint::LoadFromFile(const std::string& filename) {
 }
 
 bool Blueprint::Deserialize(const std::string& data) {
-    // Basic deserialization (simplified)
     Clear();
-    // TODO: Implement full deserialization
+    
+    std::istringstream iss(data);
+    std::string line;
+    
+    // Parse blueprint header
+    if (!std::getline(iss, line) || line.find("BLUEPRINT:") != 0) {
+        return false;
+    }
+    
+    // Extract name and description from header
+    size_t first_colon = line.find(':');
+    size_t second_colon = line.find(':', first_colon + 1);
+    if (second_colon != std::string::npos) {
+        name_ = line.substr(first_colon + 1, second_colon - first_colon - 1);
+        description_ = line.substr(second_colon + 1);
+    }
+    
+    // Parse components and connections
+    while (std::getline(iss, line)) {
+        if (line.find("COMPONENT:") == 0) {
+            // Parse component: COMPONENT:id:type:name:x:y:width:height
+            std::istringstream line_stream(line);
+            std::vector<std::string> parts;
+            std::string part;
+            
+            while (std::getline(line_stream, part, ':')) {
+                parts.push_back(part);
+            }
+            
+            if (parts.size() >= 8) {
+                auto component = std::make_unique<Component>(
+                    parts[1],  // id
+                    static_cast<ComponentType>(std::stoi(parts[2])),  // type
+                    parts[3]   // name
+                );
+                
+                component->SetPosition(std::stof(parts[4]), std::stof(parts[5]));
+                component->SetSize(std::stof(parts[6]), std::stof(parts[7]));
+                
+                // Parse properties and pins from continuation lines
+                std::streampos current_pos = iss.tellg();
+                std::string next_line;
+                while (std::getline(iss, next_line)) {
+                    if (next_line.find(";PROP:") == 0) {
+                        size_t eq_pos = next_line.find('=');
+                        if (eq_pos != std::string::npos) {
+                            std::string key = next_line.substr(6, eq_pos - 6);
+                            std::string value = next_line.substr(eq_pos + 1);
+                            component->SetProperty(key, value);
+                        }
+                    } else if (next_line.find(";PIN:") == 0) {
+                        size_t eq_pos = next_line.find('=');
+                        if (eq_pos != std::string::npos) {
+                            std::string pin_id = next_line.substr(5, eq_pos - 5);
+                            std::string pin_name = next_line.substr(eq_pos + 1);
+                            component->AddPin(pin_id, pin_name);
+                        }
+                    } else {
+                        // Not a property or pin, rewind and break
+                        iss.seekg(current_pos);
+                        break;
+                    }
+                    current_pos = iss.tellg();
+                }
+                
+                AddComponent(std::move(component));
+            }
+        } else if (line.find("CONNECTION:") == 0) {
+            // Parse connection: CONNECTION:id:from_comp:from_pin:to_comp:to_pin
+            std::istringstream line_stream(line);
+            std::vector<std::string> parts;
+            std::string part;
+            
+            while (std::getline(line_stream, part, ':')) {
+                parts.push_back(part);
+            }
+            
+            if (parts.size() >= 6) {
+                auto connection = std::make_unique<Connection>(
+                    parts[1],  // id
+                    parts[2],  // from_component
+                    parts[3],  // from_pin
+                    parts[4],  // to_component
+                    parts[5]   // to_pin
+                );
+                
+                // Parse properties from continuation lines
+                std::streampos current_pos = iss.tellg();
+                std::string next_line;
+                while (std::getline(iss, next_line)) {
+                    if (next_line.find(";PROP:") == 0) {
+                        size_t eq_pos = next_line.find('=');
+                        if (eq_pos != std::string::npos) {
+                            std::string key = next_line.substr(6, eq_pos - 6);
+                            std::string value = next_line.substr(eq_pos + 1);
+                            connection->SetProperty(key, value);
+                        }
+                    } else {
+                        // Not a property, rewind and break
+                        iss.seekg(current_pos);
+                        break;
+                    }
+                    current_pos = iss.tellg();
+                }
+                
+                AddConnection(std::move(connection));
+            }
+        }
+    }
+    
     return true;
 }
 
@@ -622,7 +731,12 @@ void BlueprintEditor::ClearConnectedDevice() {
 
 // BlueprintPreviewer implementation
 BlueprintPreviewer::BlueprintPreviewer()
-    : blueprint_(nullptr), view_mode_(ViewMode::SCHEMATIC_2D) {
+    : blueprint_(nullptr), 
+      view_mode_(ViewMode::SCHEMATIC_2D),
+      camera_yaw_(0.0f),
+      camera_pitch_(30.0f),
+      camera_zoom_(1.0f),
+      camera_distance_(500.0f) {
 }
 
 bool BlueprintPreviewer::Initialize() {
@@ -655,15 +769,34 @@ void BlueprintPreviewer::Render() {
 }
 
 void BlueprintPreviewer::RotateCamera(float yaw, float pitch) {
-    // TODO: Implement camera rotation
+    camera_yaw_ += yaw;
+    camera_pitch_ += pitch;
+    
+    // Clamp pitch to prevent flipping
+    if (camera_pitch_ > 89.0f) camera_pitch_ = 89.0f;
+    if (camera_pitch_ < -89.0f) camera_pitch_ = -89.0f;
+    
+    // Normalize yaw to 0-360
+    while (camera_yaw_ >= 360.0f) camera_yaw_ -= 360.0f;
+    while (camera_yaw_ < 0.0f) camera_yaw_ += 360.0f;
 }
 
 void BlueprintPreviewer::ZoomCamera(float delta) {
-    // TODO: Implement camera zoom
+    camera_zoom_ *= (1.0f + delta * 0.1f);
+    
+    // Clamp zoom range
+    if (camera_zoom_ < 0.1f) camera_zoom_ = 0.1f;
+    if (camera_zoom_ > 10.0f) camera_zoom_ = 10.0f;
+    
+    // Adjust camera distance based on zoom
+    camera_distance_ = 500.0f / camera_zoom_;
 }
 
 void BlueprintPreviewer::ResetCamera() {
-    // TODO: Implement camera reset
+    camera_yaw_ = 0.0f;
+    camera_pitch_ = 30.0f;
+    camera_zoom_ = 1.0f;
+    camera_distance_ = 500.0f;
 }
 
 void BlueprintPreviewer::HighlightComponent(const std::string& component_id) {
@@ -675,15 +808,165 @@ void BlueprintPreviewer::ClearHighlight() {
 }
 
 void BlueprintPreviewer::RenderComponent2D(const Component* component) {
-    // TODO: Implement 2D rendering
+    if (!component) return;
+    
+    // Get component properties
+    float x = component->GetX();
+    float y = component->GetY();
+    float width = component->GetWidth();
+    float height = component->GetHeight();
+    
+    // Draw component based on type
+    ComponentType type = component->GetType();
+    
+    // Draw component outline (would use actual rendering API in real implementation)
+    // For now, this is a placeholder that would be replaced with actual 2D rendering
+    
+    // Different shapes for different component types
+    switch (type) {
+        case ComponentType::ESP32_BOARD:
+            // Draw as large rectangle with pins
+            break;
+        case ComponentType::LED:
+            // Draw as circle
+            break;
+        case ComponentType::BUTTON:
+            // Draw as rounded rectangle
+            break;
+        case ComponentType::SENSOR:
+        case ComponentType::ACTUATOR:
+            // Draw as hexagon
+            break;
+        case ComponentType::RESISTOR:
+            // Draw as zigzag line
+            break;
+        case ComponentType::CAPACITOR:
+            // Draw as parallel lines
+            break;
+        default:
+            // Draw as simple rectangle
+            break;
+    }
+    
+    // Draw component name/label
+    // Would render text at (x, y - 15) in actual implementation
+    
+    // Draw pins if visible
+    for (const auto& pin : component->GetPins()) {
+        // Draw pin markers on component edges
+    }
+    
+    // Highlight if selected
+    if (component->GetId() == highlighted_component_) {
+        // Draw highlight border in actual implementation
+    }
 }
 
 void BlueprintPreviewer::RenderComponent3D(const Component* component) {
-    // TODO: Implement 3D rendering using PureCRenderer
+    if (!component) return;
+    
+    // Get component properties
+    float x = component->GetX();
+    float y = component->GetY();
+    float width = component->GetWidth();
+    float height = component->GetHeight();
+    
+    // Apply camera transformations
+    // In real implementation, this would:
+    // 1. Apply camera rotation (yaw, pitch)
+    // 2. Apply camera zoom
+    // 3. Apply perspective projection
+    
+    // Calculate 3D position based on 2D position and camera
+    float cos_yaw = std::cos(camera_yaw_ * 3.14159f / 180.0f);
+    float sin_yaw = std::sin(camera_yaw_ * 3.14159f / 180.0f);
+    float cos_pitch = std::cos(camera_pitch_ * 3.14159f / 180.0f);
+    float sin_pitch = std::sin(camera_pitch_ * 3.14159f / 180.0f);
+    
+    // Transform coordinates
+    float x3d = x * cos_yaw - y * sin_yaw;
+    float y3d = x * sin_yaw * cos_pitch + y * cos_yaw * cos_pitch;
+    float z3d = x * sin_yaw * sin_pitch + y * cos_yaw * sin_pitch;
+    
+    // Apply zoom
+    x3d *= camera_zoom_;
+    y3d *= camera_zoom_;
+    z3d *= camera_zoom_;
+    
+    // Draw component as 3D object
+    ComponentType type = component->GetType();
+    
+    switch (view_mode_) {
+        case ViewMode::ISOMETRIC_3D:
+            // Draw isometric projection
+            break;
+        case ViewMode::PERSPECTIVE_3D:
+            // Draw with perspective
+            break;
+        case ViewMode::PHYSICAL_3D:
+            // Draw realistic 3D model
+            break;
+        default:
+            // Fallback to 2D
+            RenderComponent2D(component);
+            return;
+    }
+    
+    // Draw component label in 3D space
+    // Would render 3D text in actual implementation
+    
+    // Highlight if selected
+    if (component->GetId() == highlighted_component_) {
+        // Draw 3D highlight in actual implementation
+    }
 }
 
 void BlueprintPreviewer::RenderConnection(const Connection* connection) {
-    // TODO: Implement connection rendering
+    if (!connection) return;
+    
+    // Get connected components
+    const Component* from_comp = nullptr;
+    const Component* to_comp = nullptr;
+    
+    if (blueprint_) {
+        from_comp = blueprint_->GetComponent(connection->GetFromComponent());
+        to_comp = blueprint_->GetComponent(connection->GetToComponent());
+    }
+    
+    if (!from_comp || !to_comp) return;
+    
+    // Calculate start and end positions
+    float x1 = from_comp->GetX() + from_comp->GetWidth() / 2;
+    float y1 = from_comp->GetY() + from_comp->GetHeight() / 2;
+    float x2 = to_comp->GetX() + to_comp->GetWidth() / 2;
+    float y2 = to_comp->GetY() + to_comp->GetHeight() / 2;
+    
+    // Draw line between components
+    // In 2D mode: straight or bezier curve
+    // In 3D mode: apply camera transformations
+    
+    if (view_mode_ == ViewMode::SCHEMATIC_2D) {
+        // Draw 2D line (straight or curved)
+        // Would use actual rendering API in real implementation
+        
+        // Draw control points for bezier curve
+        float mx = (x1 + x2) / 2;
+        float my = (y1 + y2) / 2;
+        
+        // Draw bezier curve: start -> mid -> end
+    } else {
+        // Draw 3D line with camera transformations
+        // Apply same transformations as RenderComponent3D
+    }
+    
+    // Draw connection label if available
+    std::string label = connection->GetProperty("label");
+    if (!label.empty()) {
+        // Draw text at midpoint
+    }
+    
+    // Draw arrow to indicate direction
+    // Calculate arrow head at destination
 }
 
 } // namespace blueprint

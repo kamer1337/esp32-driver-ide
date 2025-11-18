@@ -289,6 +289,12 @@ private:
     ViewMode view_mode_;
     std::string highlighted_component_;
     
+    // Camera state
+    float camera_yaw_;
+    float camera_pitch_;
+    float camera_zoom_;
+    float camera_distance_;
+    
     // Rendering helpers
     void RenderComponent2D(const Component* component);
     void RenderComponent3D(const Component* component);

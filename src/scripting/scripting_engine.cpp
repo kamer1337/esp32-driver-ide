@@ -227,26 +227,269 @@ void ScriptEngine::RegisterDeviceFunctions() {
 
 std::vector<ScriptEngine::Token> ScriptEngine::Tokenize(const std::string& source) {
     std::vector<Token> tokens;
-    // Simplified tokenizer - just return empty for now
-    // TODO: Implement full tokenizer
+    size_t pos = 0;
+    int line = 1;
+    
+    auto is_alpha = [](char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; };
+    auto is_digit = [](char c) { return c >= '0' && c <= '9'; };
+    auto is_alnum = [&](char c) { return is_alpha(c) || is_digit(c); };
+    
+    while (pos < source.length()) {
+        char c = source[pos];
+        
+        // Skip whitespace
+        if (c == ' ' || c == '\t' || c == '\r') {
+            pos++;
+            continue;
+        }
+        
+        // Newline
+        if (c == '\n') {
+            tokens.push_back({Token::Type::NEWLINE, "\n", line});
+            line++;
+            pos++;
+            continue;
+        }
+        
+        // Comments
+        if (c == '#' || (c == '/' && pos + 1 < source.length() && source[pos + 1] == '/')) {
+            // Skip until end of line
+            while (pos < source.length() && source[pos] != '\n') {
+                pos++;
+            }
+            continue;
+        }
+        
+        // String literals
+        if (c == '"' || c == '\'') {
+            char quote = c;
+            pos++;
+            std::string value;
+            while (pos < source.length() && source[pos] != quote) {
+                if (source[pos] == '\\' && pos + 1 < source.length()) {
+                    pos++;
+                    switch (source[pos]) {
+                        case 'n': value += '\n'; break;
+                        case 't': value += '\t'; break;
+                        case 'r': value += '\r'; break;
+                        case '\\': value += '\\'; break;
+                        case '"': value += '"'; break;
+                        case '\'': value += '\''; break;
+                        default: value += source[pos]; break;
+                    }
+                } else {
+                    value += source[pos];
+                }
+                pos++;
+            }
+            if (pos < source.length()) pos++; // Skip closing quote
+            tokens.push_back({Token::Type::STRING, value, line});
+            continue;
+        }
+        
+        // Numbers
+        if (is_digit(c) || (c == '.' && pos + 1 < source.length() && is_digit(source[pos + 1]))) {
+            std::string value;
+            while (pos < source.length() && (is_digit(source[pos]) || source[pos] == '.')) {
+                value += source[pos++];
+            }
+            tokens.push_back({Token::Type::NUMBER, value, line});
+            continue;
+        }
+        
+        // Identifiers and keywords
+        if (is_alpha(c)) {
+            std::string value;
+            while (pos < source.length() && is_alnum(source[pos])) {
+                value += source[pos++];
+            }
+            
+            // Check for keywords
+            Token::Type type = Token::Type::IDENTIFIER;
+            if (value == "if") type = Token::Type::IF;
+            else if (value == "else") type = Token::Type::ELSE;
+            else if (value == "while") type = Token::Type::WHILE;
+            else if (value == "for") type = Token::Type::FOR;
+            else if (value == "function") type = Token::Type::FUNCTION;
+            else if (value == "return") type = Token::Type::RETURN;
+            
+            tokens.push_back({type, value, line});
+            continue;
+        }
+        
+        // Operators and punctuation
+        switch (c) {
+            case '(':
+                tokens.push_back({Token::Type::LPAREN, "(", line});
+                pos++;
+                break;
+            case ')':
+                tokens.push_back({Token::Type::RPAREN, ")", line});
+                pos++;
+                break;
+            case '{':
+                tokens.push_back({Token::Type::LBRACE, "{", line});
+                pos++;
+                break;
+            case '}':
+                tokens.push_back({Token::Type::RBRACE, "}", line});
+                pos++;
+                break;
+            case ',':
+                tokens.push_back({Token::Type::COMMA, ",", line});
+                pos++;
+                break;
+            case '.':
+                tokens.push_back({Token::Type::DOT, ".", line});
+                pos++;
+                break;
+            case ':':
+                tokens.push_back({Token::Type::COLON, ":", line});
+                pos++;
+                break;
+            case '+':
+                tokens.push_back({Token::Type::PLUS, "+", line});
+                pos++;
+                break;
+            case '-':
+                tokens.push_back({Token::Type::MINUS, "-", line});
+                pos++;
+                break;
+            case '*':
+                tokens.push_back({Token::Type::STAR, "*", line});
+                pos++;
+                break;
+            case '/':
+                tokens.push_back({Token::Type::SLASH, "/", line});
+                pos++;
+                break;
+            case '=':
+                if (pos + 1 < source.length() && source[pos + 1] == '=') {
+                    tokens.push_back({Token::Type::EQUAL_EQUAL, "==", line});
+                    pos += 2;
+                } else {
+                    tokens.push_back({Token::Type::EQUAL, "=", line});
+                    pos++;
+                }
+                break;
+            case '!':
+                if (pos + 1 < source.length() && source[pos + 1] == '=') {
+                    tokens.push_back({Token::Type::NOT_EQUAL, "!=", line});
+                    pos += 2;
+                } else {
+                    pos++; // Skip standalone !
+                }
+                break;
+            case '<':
+                if (pos + 1 < source.length() && source[pos + 1] == '=') {
+                    tokens.push_back({Token::Type::LESS_EQUAL, "<=", line});
+                    pos += 2;
+                } else {
+                    tokens.push_back({Token::Type::LESS, "<", line});
+                    pos++;
+                }
+                break;
+            case '>':
+                if (pos + 1 < source.length() && source[pos + 1] == '=') {
+                    tokens.push_back({Token::Type::GREATER_EQUAL, ">=", line});
+                    pos += 2;
+                } else {
+                    tokens.push_back({Token::Type::GREATER, ">", line});
+                    pos++;
+                }
+                break;
+            default:
+                // Unknown character, skip
+                pos++;
+                break;
+        }
+    }
+    
     return tokens;
 }
 
 std::vector<std::unique_ptr<ScriptEngine::Statement>> ScriptEngine::Parse(const std::vector<Token>& tokens) {
     std::vector<std::unique_ptr<Statement>> statements;
-    // Simplified parser
-    // TODO: Implement full parser
+    
+    // Simple parsing: recognize basic patterns
+    // For a full implementation, would need recursive descent parser
+    // This is a minimal implementation for demonstration
+    
+    size_t pos = 0;
+    while (pos < tokens.size()) {
+        const Token& token = tokens[pos];
+        
+        // Skip newlines
+        if (token.type == Token::Type::NEWLINE) {
+            pos++;
+            continue;
+        }
+        
+        // Parse simple statements (identifier = expression)
+        if (token.type == Token::Type::IDENTIFIER) {
+            // Variable assignment or function call
+            pos++;
+            
+            // Skip to next statement
+            while (pos < tokens.size() && tokens[pos].type != Token::Type::NEWLINE) {
+                pos++;
+            }
+            
+            // Create a placeholder statement
+            statements.push_back(std::make_unique<Statement>());
+        } else if (token.type == Token::Type::IF ||
+                   token.type == Token::Type::WHILE ||
+                   token.type == Token::Type::FOR) {
+            // Control flow statement
+            pos++;
+            
+            // Skip to matching end
+            int depth = 1;
+            while (pos < tokens.size() && depth > 0) {
+                if (tokens[pos].type == Token::Type::IF ||
+                    tokens[pos].type == Token::Type::WHILE ||
+                    tokens[pos].type == Token::Type::FOR) {
+                    depth++;
+                } else if (tokens[pos].value == "end") {
+                    depth--;
+                }
+                pos++;
+            }
+            
+            statements.push_back(std::make_unique<Statement>());
+        } else {
+            pos++;
+        }
+    }
+    
     return statements;
 }
 
 void ScriptEngine::ExecuteStatements(const std::vector<std::unique_ptr<Statement>>& statements) {
-    // Simplified executor
-    // TODO: Implement full executor
+    // Simple executor - would evaluate each statement
+    // This is a minimal placeholder implementation
+    // In a full implementation, would:
+    // 1. Evaluate expressions
+    // 2. Handle variable assignments
+    // 3. Execute function calls
+    // 4. Process control flow (if/while/for)
+    
+    for (const auto& stmt : statements) {
+        // Execute statement
+        // Would call specific execution functions based on statement type
+    }
 }
 
 ScriptValue ScriptEngine::EvaluateExpression(const Expression& expr) {
-    // Simplified evaluator
-    // TODO: Implement full evaluator
+    // Simple evaluator - would recursively evaluate expression tree
+    // This is a minimal placeholder implementation
+    // In a full implementation, would:
+    // 1. Evaluate literals (numbers, strings, booleans)
+    // 2. Evaluate variables
+    // 3. Evaluate binary operations (+, -, *, /, ==, <, >, etc.)
+    // 4. Evaluate function calls
+    // 5. Evaluate member access (object.property)
+    
     return ScriptValue();
 }
 
