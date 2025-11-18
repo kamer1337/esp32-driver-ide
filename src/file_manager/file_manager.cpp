@@ -43,8 +43,17 @@ bool FileManager::SaveFile(const std::string& name) {
         return false;
     }
     
-    // In a real implementation, this would write to disk
+    // Write file to disk
+    std::ofstream file(files_[name].path);
+    if (!file.is_open()) {
+        return false;
+    }
+    
+    file << files_[name].content;
+    file.close();
+    
     files_[name].is_modified = false;
+    
     return true;
 }
 
@@ -147,14 +156,58 @@ std::string FileManager::GetCurrentFile() const {
 
 bool FileManager::LoadProject(const std::string& project_path) {
     project_path_ = project_path;
-    // In a real implementation, this would load files from disk
+    
+    // Check if directory exists and is accessible
+    std::ifstream test_file(project_path + "/.project");
+    if (!test_file.is_open()) {
+        // Try to load individual files from directory
+        // For now, just set the path
+        return true;
+    }
+    test_file.close();
+    
+    // In a full implementation, would:
+    // 1. Read .project file for project metadata
+    // 2. Scan directory for source files
+    // 3. Load each file into memory
+    // 4. Build file tree structure
+    
     return true;
 }
 
 bool FileManager::SaveProject(const std::string& project_path) {
     project_path_ = project_path;
-    // In a real implementation, this would save files to disk
-    return true;
+    
+    // Save all modified files in the project
+    bool all_saved = true;
+    for (auto& pair : files_) {
+        if (pair.second.is_modified) {
+            // Construct full path
+            std::string full_path = project_path + "/" + pair.second.path;
+            
+            // Write file to disk
+            std::ofstream file(full_path);
+            if (!file.is_open()) {
+                all_saved = false;
+                continue;
+            }
+            
+            file << pair.second.content;
+            file.close();
+            
+            pair.second.is_modified = false;
+        }
+    }
+    
+    // Save project metadata
+    std::ofstream project_file(project_path + "/.project");
+    if (project_file.is_open()) {
+        project_file << "# ESP32 Driver IDE Project\n";
+        project_file << "files=" << files_.size() << "\n";
+        project_file.close();
+    }
+    
+    return all_saved;
 }
 
 std::string FileManager::GetDefaultSketch() {
