@@ -1201,8 +1201,100 @@ void AdvancedDecompiler::IdentifyLoops(Function* func) {
 }
 
 void AdvancedDecompiler::SimplifyControlFlow(Function* func) {
-    // Simplify CFG by removing empty blocks, merging sequential blocks
-    // TODO: Implement CFG simplification
+    if (!func->cfg) return;
+    
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        
+        // Remove empty blocks
+        for (auto it = func->cfg->blocks.begin(); it != func->cfg->blocks.end();) {
+            BasicBlock* block = it->get();
+            
+            // Skip entry block
+            if (block == func->cfg->entry_block) {
+                ++it;
+                continue;
+            }
+            
+            // If block has no instructions and exactly one successor
+            if (block->instructions.empty() && block->successors.size() == 1) {
+                BasicBlock* successor = block->successors[0];
+                
+                // Redirect all predecessors to successor
+                for (BasicBlock* pred : block->predecessors) {
+                    // Replace block with successor in predecessor's successor list
+                    auto& pred_succ = pred->successors;
+                    for (size_t i = 0; i < pred_succ.size(); i++) {
+                        if (pred_succ[i] == block) {
+                            pred_succ[i] = successor;
+                        }
+                    }
+                }
+                
+                // Update successor's predecessors
+                auto& succ_pred = successor->predecessors;
+                succ_pred.erase(
+                    std::remove(succ_pred.begin(), succ_pred.end(), block),
+                    succ_pred.end()
+                );
+                succ_pred.insert(succ_pred.end(), block->predecessors.begin(), block->predecessors.end());
+                
+                // Remove the empty block
+                it = func->cfg->blocks.erase(it);
+                changed = true;
+            } else {
+                ++it;
+            }
+        }
+        
+        // Merge sequential blocks (block with single successor, successor has single predecessor)
+        for (auto& block_ptr : func->cfg->blocks) {
+            BasicBlock* block = block_ptr.get();
+            
+            // Skip if not exactly one successor
+            if (block->successors.size() != 1) continue;
+            
+            BasicBlock* successor = block->successors[0];
+            
+            // Skip if successor is entry block or has multiple predecessors
+            if (successor == func->cfg->entry_block || successor->predecessors.size() != 1) {
+                continue;
+            }
+            
+            // Merge successor into block
+            block->instructions.insert(
+                block->instructions.end(),
+                successor->instructions.begin(),
+                successor->instructions.end()
+            );
+            
+            // Update successors
+            block->successors = successor->successors;
+            
+            // Update new successors' predecessors
+            for (BasicBlock* new_succ : block->successors) {
+                auto& pred = new_succ->predecessors;
+                for (size_t i = 0; i < pred.size(); i++) {
+                    if (pred[i] == successor) {
+                        pred[i] = block;
+                    }
+                }
+            }
+            
+            // Remove merged block from CFG
+            func->cfg->blocks.erase(
+                std::remove_if(func->cfg->blocks.begin(), func->cfg->blocks.end(),
+                    [successor](const std::unique_ptr<BasicBlock>& b) {
+                        return b.get() == successor;
+                    }),
+                func->cfg->blocks.end()
+            );
+            
+            changed = true;
+            break; // Restart from beginning after modification
+        }
+    }
 }
 
 void AdvancedDecompiler::PerformDataFlowAnalysis(Function* func) {

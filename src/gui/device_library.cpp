@@ -173,13 +173,79 @@ std::vector<DeviceInstance*> DeviceLibrary::GetAllInstances() {
 }
 
 bool DeviceLibrary::ImportFromFile(const std::string& filename) {
-    // TODO: Implement JSON import
-    return false;
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        return false;
+    }
+    
+    // Simple JSON-like parsing (basic implementation)
+    // In a real implementation, use a JSON library like nlohmann/json
+    std::string line;
+    std::string current_device_id;
+    std::string current_device_name;
+    DeviceType current_type = DeviceType::CUSTOM;
+    
+    while (std::getline(file, line)) {
+        // Trim whitespace
+        line.erase(0, line.find_first_not_of(" \t\n\r"));
+        line.erase(line.find_last_not_of(" \t\n\r") + 1);
+        
+        // Parse simple key-value pairs
+        if (line.find("\"id\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t quote_start = line.find("\"", start) + 1;
+            size_t quote_end = line.find("\"", quote_start);
+            current_device_id = line.substr(quote_start, quote_end - quote_start);
+        } else if (line.find("\"name\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t quote_start = line.find("\"", start) + 1;
+            size_t quote_end = line.find("\"", quote_start);
+            current_device_name = line.substr(quote_start, quote_end - quote_start);
+        } else if (line.find("}") != std::string::npos && !current_device_id.empty()) {
+            // End of device definition, add it
+            auto device = std::make_unique<DeviceDefinition>(current_device_id, current_device_name, current_type);
+            device->SetDescription("Imported device");
+            AddDevice(std::move(device));
+            current_device_id.clear();
+        }
+    }
+    
+    return true;
 }
 
 bool DeviceLibrary::ExportToFile(const std::string& filename) const {
-    // TODO: Implement JSON export
-    return false;
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        return false;
+    }
+    
+    // Export devices in simple JSON format
+    file << "{\n";
+    file << "  \"devices\": [\n";
+    
+    bool first = true;
+    for (const auto& pair : devices_) {
+        if (!first) {
+            file << ",\n";
+        }
+        first = false;
+        
+        const auto& device = pair.second;
+        file << "    {\n";
+        file << "      \"id\": \"" << device->GetId() << "\",\n";
+        file << "      \"name\": \"" << device->GetName() << "\",\n";
+        file << "      \"description\": \"" << device->GetDescription() << "\",\n";
+        file << "      \"type\": " << static_cast<int>(device->GetType()) << ",\n";
+        file << "      \"manufacturer\": \"" << device->GetManufacturer() << "\",\n";
+        file << "      \"version\": \"" << device->GetVersion() << "\",\n";
+        file << "      \"pins\": " << device->GetPins().size() << "\n";
+        file << "    }";
+    }
+    
+    file << "\n  ]\n";
+    file << "}\n";
+    
+    return true;
 }
 
 std::vector<const DeviceDefinition*> DeviceLibrary::SearchDevices(const std::string& query) const {

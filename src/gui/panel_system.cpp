@@ -382,13 +382,164 @@ int PanelLayout::GetSplitterPosition(PanelDock dock) const {
 }
 
 bool PanelLayout::SaveLayout(const std::string& filename) const {
-    // TODO: Implement layout serialization
-    return false;
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        return false;
+    }
+    
+    // Save layout in simple JSON-like format
+    file << "{\n";
+    file << "  \"panels\": [\n";
+    
+    bool first = true;
+    for (const auto& pair : panels_) {
+        if (!first) {
+            file << ",\n";
+        }
+        first = false;
+        
+        const Panel* panel = pair.second.get();
+        Rectangle bounds = panel->GetBounds();
+        file << "    {\n";
+        file << "      \"id\": \"" << panel->GetId() << "\",\n";
+        file << "      \"title\": \"" << panel->GetTitle() << "\",\n";
+        file << "      \"dock\": " << static_cast<int>(panel->GetDock()) << ",\n";
+        file << "      \"x\": " << bounds.x << ",\n";
+        file << "      \"y\": " << bounds.y << ",\n";
+        file << "      \"width\": " << bounds.width << ",\n";
+        file << "      \"height\": " << bounds.height << ",\n";
+        file << "      \"visible\": " << (panel->IsVisible() ? "true" : "false") << ",\n";
+        file << "      \"floating\": " << (panel->GetDock() == PanelDock::FLOATING ? "true" : "false") << "\n";
+        file << "    }";
+    }
+    
+    file << "\n  ],\n";
+    file << "  \"splitters\": [\n";
+    
+    first = true;
+    for (const auto& pair : splitter_positions_) {
+        if (!first) {
+            file << ",\n";
+        }
+        first = false;
+        
+        file << "    {\"dock\": " << static_cast<int>(pair.first) 
+             << ", \"position\": " << pair.second << "}";
+    }
+    
+    file << "\n  ]\n";
+    file << "}\n";
+    
+    return true;
 }
 
 bool PanelLayout::LoadLayout(const std::string& filename) {
-    // TODO: Implement layout deserialization
-    return false;
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        return false;
+    }
+    
+    // Simple JSON-like parser
+    std::string line;
+    std::string current_panel_id;
+    std::string current_panel_title;
+    PanelDock current_dock = PanelDock::CENTER;
+    int x = 0, y = 0, width = 100, height = 100;
+    bool visible = true, floating = false;
+    bool in_panel = false;
+    bool in_splitter = false;
+    
+    while (std::getline(file, line)) {
+        // Trim whitespace
+        line.erase(0, line.find_first_not_of(" \t\n\r"));
+        line.erase(line.find_last_not_of(" \t\n\r") + 1);
+        
+        if (line.find("\"panels\"") != std::string::npos) {
+            in_panel = true;
+            in_splitter = false;
+        } else if (line.find("\"splitters\"") != std::string::npos) {
+            in_panel = false;
+            in_splitter = true;
+        } else if (in_panel && line.find("\"id\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t quote_start = line.find("\"", start) + 1;
+            size_t quote_end = line.find("\"", quote_start);
+            current_panel_id = line.substr(quote_start, quote_end - quote_start);
+        } else if (in_panel && line.find("\"title\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t quote_start = line.find("\"", start) + 1;
+            size_t quote_end = line.find("\"", quote_start);
+            current_panel_title = line.substr(quote_start, quote_end - quote_start);
+        } else if (in_panel && line.find("\"dock\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t comma = line.find(",", start);
+            std::string value = line.substr(start, comma - start);
+            value.erase(0, value.find_first_not_of(" \t"));
+            current_dock = static_cast<PanelDock>(std::stoi(value));
+        } else if (in_panel && line.find("\"x\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t comma = line.find(",", start);
+            std::string value = line.substr(start, comma - start);
+            value.erase(0, value.find_first_not_of(" \t"));
+            x = std::stoi(value);
+        } else if (in_panel && line.find("\"y\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t comma = line.find(",", start);
+            std::string value = line.substr(start, comma - start);
+            value.erase(0, value.find_first_not_of(" \t"));
+            y = std::stoi(value);
+        } else if (in_panel && line.find("\"width\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t comma = line.find(",", start);
+            std::string value = line.substr(start, comma - start);
+            value.erase(0, value.find_first_not_of(" \t"));
+            width = std::stoi(value);
+        } else if (in_panel && line.find("\"height\":") != std::string::npos) {
+            size_t start = line.find(":") + 1;
+            size_t comma = line.find(",", start);
+            std::string value = line.substr(start, comma - start);
+            value.erase(0, value.find_first_not_of(" \t"));
+            height = std::stoi(value);
+        } else if (in_panel && line.find("\"visible\":") != std::string::npos) {
+            visible = line.find("true") != std::string::npos;
+        } else if (in_panel && line.find("\"floating\":") != std::string::npos) {
+            floating = line.find("true") != std::string::npos;
+            
+            // End of panel object, update the panel if it exists
+            Panel* panel = GetPanel(current_panel_id);
+            if (panel) {
+                panel->SetPosition(x, y);
+                panel->SetSize(width, height);
+                
+                // Set dock and state based on floating
+                if (floating) {
+                    panel->SetDock(PanelDock::FLOATING);
+                } else {
+                    panel->SetDock(current_dock);
+                }
+                
+                panel->SetState(visible ? PanelState::VISIBLE : PanelState::HIDDEN);
+            }
+        } else if (in_splitter && line.find("\"dock\":") != std::string::npos) {
+            // Parse splitter position
+            size_t dock_start = line.find(":") + 1;
+            size_t comma = line.find(",", dock_start);
+            std::string dock_str = line.substr(dock_start, comma - dock_start);
+            dock_str.erase(0, dock_str.find_first_not_of(" \t"));
+            PanelDock dock = static_cast<PanelDock>(std::stoi(dock_str));
+            
+            size_t pos_start = line.find(":", comma) + 1;
+            size_t brace = line.find("}", pos_start);
+            std::string pos_str = line.substr(pos_start, brace - pos_start);
+            pos_str.erase(0, pos_str.find_first_not_of(" \t"));
+            int position = std::stoi(pos_str);
+            
+            SetSplitterPosition(dock, position);
+        }
+    }
+    
+    ComputeLayout();
+    return true;
 }
 
 // EditorPanel implementation
