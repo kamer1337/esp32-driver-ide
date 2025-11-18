@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
+#include <chrono>
 
 namespace esp32_ide {
 namespace blueprint {
@@ -364,7 +365,63 @@ void BlueprintEditor::Cut() {
 }
 
 void BlueprintEditor::Paste(float x, float y) {
-    // TODO: Implement paste functionality
+    if (clipboard_data_.empty() || !current_blueprint_) {
+        return;
+    }
+    
+    // Parse clipboard data to extract component type
+    std::istringstream iss(clipboard_data_);
+    std::string line;
+    std::getline(iss, line);
+    
+    // Parse component header: COMPONENT:id:type:name:x:y:width:height
+    if (line.find("COMPONENT:") == 0) {
+        std::vector<std::string> parts;
+        std::string part;
+        std::istringstream line_stream(line);
+        
+        while (std::getline(line_stream, part, ':')) {
+            parts.push_back(part);
+        }
+        
+        if (parts.size() >= 8) {
+            // Get component type
+            ComponentType type = static_cast<ComponentType>(std::stoi(parts[2]));
+            
+            // Create new component with unique ID at paste location
+            std::string new_id = "component_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+            std::string name = parts[3] + " (Copy)";
+            
+            auto new_component = std::make_unique<Component>(new_id, type, name);
+            
+            // Set position to paste location
+            new_component->SetPosition(x, y);
+            new_component->SetSize(std::stof(parts[6]), std::stof(parts[7]));
+            
+            // Parse and copy properties and pins
+            while (std::getline(iss, line)) {
+                if (line.find(";PROP:") != std::string::npos) {
+                    size_t eq_pos = line.find('=');
+                    if (eq_pos != std::string::npos) {
+                        std::string key = line.substr(6, eq_pos - 6);
+                        std::string value = line.substr(eq_pos + 1);
+                        new_component->SetProperty(key, value);
+                    }
+                } else if (line.find(";PIN:") != std::string::npos) {
+                    size_t eq_pos = line.find('=');
+                    if (eq_pos != std::string::npos) {
+                        std::string pin_id = line.substr(5, eq_pos - 5);
+                        std::string pin_name = line.substr(eq_pos + 1);
+                        new_component->AddPin(pin_id, pin_name);
+                    }
+                }
+            }
+            
+            // Add to current blueprint
+            current_blueprint_->AddComponent(std::move(new_component));
+            SelectComponent(new_id);
+        }
+    }
 }
 
 void BlueprintEditor::Undo() {
