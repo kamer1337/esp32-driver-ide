@@ -611,7 +611,7 @@ void StartMemoryProfiling();
 
 ## Version Information
 
-- **IDE Version**: 1.1.0
+- **IDE Version**: 1.3.0
 - **Feature Set**: Complete
 - **Last Updated**: November 2025
 - **Build System**: CMake 3.15+
