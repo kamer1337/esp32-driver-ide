@@ -172,7 +172,7 @@ std::string IntegratedTerminal::ExecuteBuiltInCommand(const std::string& command
     } else if (cmd == "env") {
         return HandleEnvCommand();
     } else if (cmd == "version") {
-        return "ESP32 Driver IDE v1.0.0";
+        return "ESP32 Driver IDE v1.1.0";
     }
     
     return ""; // Not a built-in command

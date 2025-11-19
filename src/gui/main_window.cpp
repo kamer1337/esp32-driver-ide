@@ -6,7 +6,7 @@ namespace gui {
 
 MainWindow::MainWindow() 
     : is_running_(false),
-      window_title_("ESP32 Driver IDE v1.0.0") {
+      window_title_("ESP32 Driver IDE v1.1.0") {
     
     // Initialize components
     editor_ = std::make_unique<TextEditor>();
@@ -29,7 +29,7 @@ bool MainWindow::Initialize() {
     LoadDefaultFile();
     
     // Initialize console
-    console_->AddMessage("ESP32 Driver IDE v1.0.0 - Ready");
+    console_->AddMessage("ESP32 Driver IDE v1.1.0 - Ready");
     console_->AddMessage("IDE initialized successfully", ConsoleWidget::MessageType::SUCCESS);
     
     return true;
