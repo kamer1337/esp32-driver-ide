@@ -63,21 +63,25 @@ cmake --build .
 
 ## Usage
 
-### Terminal Interface
+### Enhanced GUI Interface
 
-The IDE provides an interactive terminal-based interface:
+The IDE provides a professional graphical interface with gradient styling and modular panels:
 
 ```bash
-./esp32-driver-ide
+./esp32-driver-ide  # Linux/macOS
+# or
+esp32-driver-ide.exe  # Windows
 ```
 
 Features:
-- **Main Menu**: Access all IDE functions
-- **File Browser**: Navigate and open files
-- **Editor**: View and edit code with line numbers
-- **Compiler**: Compile and upload code
-- **Serial Monitor**: Communicate with ESP32 devices
-- **Console**: View output and messages
+- **Modular Panels**: Dockable panels with file browser, editor, console, terminal, and device library
+- **Gradient Styling**: Beautiful gradient backgrounds and smooth transitions
+- **Integrated Terminal**: Execute commands directly within the IDE
+- **Device Library**: Visual device management with preview and configuration
+- **Code Editor**: Syntax highlighting with multiple file tabs
+- **AI Assistant**: Context-aware code help and generation
+- **Compiler Integration**: Compile and upload code to ESP32 devices
+- **Serial Monitor**: Real-time communication with devices
 
 ### API Usage Examples
 

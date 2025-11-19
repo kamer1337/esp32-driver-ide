@@ -271,13 +271,28 @@ void EnhancedGuiWindow::ProcessEvents() {
 }
 
 void EnhancedGuiWindow::Render() {
+    // Clear window with gradient background
+    DrawGradientRect(0, 0, width_, height_, Colors::BACKGROUND_GRADIENT_TOP, Colors::BACKGROUND_GRADIENT_BOTTOM, true);
+    
     // For now, just print panel information
     std::cout << "\n=== Frame Render ===\n";
     
-    // Show visible panels
+    // Show visible panels with gradient backgrounds
     for (const auto* panel : panel_layout_->GetAllPanels()) {
         if (panel->IsVisible()) {
             Rectangle bounds = panel->GetBounds();
+            
+            // Draw panel with gradient
+            DrawGradientRect(bounds.x, bounds.y, bounds.width, bounds.height,
+                           Colors::PANEL_BG_GRADIENT_TOP, Colors::PANEL_BG_GRADIENT_BOTTOM, true);
+            
+            // Draw panel border with accent color for active panel
+            uint32_t border_color = (panel == active_panel_) ? Colors::PANEL_BORDER_HIGHLIGHT : Colors::PANEL_BORDER;
+            DrawRect(bounds.x, bounds.y, bounds.width, bounds.height, border_color, false);
+            
+            // Draw panel title
+            DrawText(bounds.x + 5, bounds.y + 5, panel->GetTitle(), Colors::TEXT);
+            
             std::cout << panel->GetTitle() << " [" << bounds.x << "," << bounds.y 
                      << " " << bounds.width << "x" << bounds.height << "]\n";
         }
@@ -569,6 +584,138 @@ void EnhancedGuiWindow::HandleResize(int width, int height) {
     width_ = width;
     height_ = height;
     panel_layout_->SetWindowSize(width, height);
+}
+
+// Drawing primitive implementations
+
+uint32_t EnhancedGuiWindow::InterpolateColor(uint32_t color1, uint32_t color2, float ratio) {
+    if (ratio <= 0.0f) return color1;
+    if (ratio >= 1.0f) return color2;
+    
+    uint32_t r1 = (color1 >> 16) & 0xFF;
+    uint32_t g1 = (color1 >> 8) & 0xFF;
+    uint32_t b1 = color1 & 0xFF;
+    
+    uint32_t r2 = (color2 >> 16) & 0xFF;
+    uint32_t g2 = (color2 >> 8) & 0xFF;
+    uint32_t b2 = color2 & 0xFF;
+    
+    uint32_t r = static_cast<uint32_t>(r1 + (r2 - r1) * ratio);
+    uint32_t g = static_cast<uint32_t>(g1 + (g2 - g1) * ratio);
+    uint32_t b = static_cast<uint32_t>(b1 + (b2 - b1) * ratio);
+    
+    return (r << 16) | (g << 8) | b;
+}
+
+void EnhancedGuiWindow::DrawGradientRect(int x, int y, int width, int height, 
+                                         uint32_t color1, uint32_t color2, bool vertical) {
+    if (!window_handle_) return;
+    
+    auto* platform_data = static_cast<PlatformWindowData*>(window_handle_);
+    
+    if (vertical) {
+        // Vertical gradient
+        for (int i = 0; i < height; i++) {
+            float ratio = static_cast<float>(i) / height;
+            uint32_t color = InterpolateColor(color1, color2, ratio);
+            DrawLine(x, y + i, x + width, y + i, color);
+        }
+    } else {
+        // Horizontal gradient
+        for (int i = 0; i < width; i++) {
+            float ratio = static_cast<float>(i) / width;
+            uint32_t color = InterpolateColor(color1, color2, ratio);
+            DrawLine(x + i, y, x + i, y + height, color);
+        }
+    }
+}
+
+void EnhancedGuiWindow::DrawRect(int x, int y, int width, int height, uint32_t color, bool filled) {
+    if (!window_handle_) return;
+    
+    auto* platform_data = static_cast<PlatformWindowData*>(window_handle_);
+    
+#ifdef _WIN32
+    if (platform_data->hdc) {
+        HBRUSH brush = CreateSolidBrush(RGB((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF));
+        RECT rect = {x, y, x + width, y + height};
+        if (filled) {
+            FillRect(platform_data->hdc, &rect, brush);
+        } else {
+            FrameRect(platform_data->hdc, &rect, brush);
+        }
+        DeleteObject(brush);
+    }
+#elif defined(__linux__) && !defined(X11_NOT_AVAILABLE)
+    if (platform_data->display && platform_data->gc) {
+        XSetForeground(platform_data->display, platform_data->gc, color);
+        if (filled) {
+            XFillRectangle(platform_data->display, platform_data->window, platform_data->gc,
+                         x, y, width, height);
+        } else {
+            XDrawRectangle(platform_data->display, platform_data->window, platform_data->gc,
+                         x, y, width, height);
+        }
+    }
+#endif
+}
+
+void EnhancedGuiWindow::DrawLine(int x1, int y1, int x2, int y2, uint32_t color) {
+    if (!window_handle_) return;
+    
+    auto* platform_data = static_cast<PlatformWindowData*>(window_handle_);
+    
+#ifdef _WIN32
+    if (platform_data->hdc) {
+        HPEN pen = CreatePen(PS_SOLID, 1, RGB((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF));
+        HPEN old_pen = (HPEN)SelectObject(platform_data->hdc, pen);
+        MoveToEx(platform_data->hdc, x1, y1, NULL);
+        LineTo(platform_data->hdc, x2, y2);
+        SelectObject(platform_data->hdc, old_pen);
+        DeleteObject(pen);
+    }
+#elif defined(__linux__) && !defined(X11_NOT_AVAILABLE)
+    if (platform_data->display && platform_data->gc) {
+        XSetForeground(platform_data->display, platform_data->gc, color);
+        XDrawLine(platform_data->display, platform_data->window, platform_data->gc,
+                 x1, y1, x2, y2);
+    }
+#endif
+}
+
+void EnhancedGuiWindow::DrawText(int x, int y, const std::string& text, uint32_t color) {
+    if (!window_handle_) return;
+    
+    auto* platform_data = static_cast<PlatformWindowData*>(window_handle_);
+    
+#ifdef _WIN32
+    if (platform_data->hdc) {
+        SetTextColor(platform_data->hdc, RGB((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF));
+        SetBkMode(platform_data->hdc, TRANSPARENT);
+        TextOutA(platform_data->hdc, x, y, text.c_str(), text.length());
+    }
+#elif defined(__linux__) && !defined(X11_NOT_AVAILABLE)
+    if (platform_data->display && platform_data->gc) {
+        XSetForeground(platform_data->display, platform_data->gc, color);
+        XDrawString(platform_data->display, platform_data->window, platform_data->gc,
+                   x, y, text.c_str(), text.length());
+    }
+#endif
+}
+
+void EnhancedGuiWindow::DrawButton(int x, int y, int width, int height, const std::string& label) {
+    // Draw button with gradient background
+    DrawGradientRect(x, y, width, height, Colors::BUTTON_GRADIENT_TOP, Colors::BUTTON_GRADIENT_BOTTOM, true);
+    DrawRect(x, y, width, height, Colors::PANEL_BORDER, false);
+    
+    // Draw label centered
+    int text_x = x + (width - label.length() * 6) / 2;  // Approximate text width
+    int text_y = y + (height - 12) / 2;  // Approximate text height
+    DrawText(text_x, text_y, label, Colors::TEXT);
+}
+
+void EnhancedGuiWindow::ClearWindow(uint32_t color) {
+    DrawRect(0, 0, width_, height_, color, true);
 }
 
 } // namespace gui
