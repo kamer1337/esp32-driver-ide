@@ -35,6 +35,7 @@ set(COMMON_SOURCES
     src/blueprint/blueprint_editor.cpp
     src/scripting/scripting_engine.cpp
     src/decompiler/advanced_decompiler.cpp
+    src/testing/test_framework.cpp
 )
 
 # GUI-specific sources
@@ -85,6 +86,7 @@ set(HEADERS
     src/blueprint/blueprint_editor.h
     src/scripting/scripting_engine.h
     src/decompiler/advanced_decompiler.h
+    src/testing/test_framework.h
 )
 
 # Create executable
