@@ -2,7 +2,7 @@
 
 This document outlines the development roadmap for the ESP32 Driver IDE project.
 
-## Current Version: 1.1.0
+## Current Version: 2.0.0
 
 ### ✅ Completed Features (November 2025)
 
@@ -272,4 +272,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 Have suggestions for the roadmap? Open an issue on GitHub with the `roadmap` label!
 
 **Last Updated**: November 2025
-**Version**: 1.1.0
+**Version**: 2.0.0
