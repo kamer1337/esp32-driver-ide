@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Options
 option(BUILD_TESTS "Build test programs" OFF)
 option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32)" ON)
-option(USE_TERMINAL_UI "Use terminal UI instead of enhanced GUI (overrides BUILD_WITH_SIMPLE_GUI)" OFF)
 
 # Common source files
 set(COMMON_SOURCES
@@ -39,9 +38,7 @@ set(COMMON_SOURCES
 )
 
 # GUI-specific sources
-if(USE_TERMINAL_UI)
-    set(GUI_SOURCES src/gui/terminal_window.cpp)
-elseif(BUILD_WITH_SIMPLE_GUI)
+if(BUILD_WITH_SIMPLE_GUI)
     set(GUI_SOURCES 
         src/gui/simple_gui_window.cpp
         src/gui/enhanced_gui_window.cpp
@@ -77,7 +74,6 @@ set(HEADERS
     src/gui/main_window.h
     src/gui/console_widget.h
     src/gui/integrated_terminal.h
-    src/gui/terminal_window.h
     src/gui/simple_gui_window.h
     src/gui/enhanced_gui_window.h
     src/gui/device_library.h
@@ -138,9 +134,7 @@ elseif(UNIX)
 endif()
 
 # Add GUI build definition
-if(USE_TERMINAL_UI)
-    target_compile_definitions(esp32-driver-ide PRIVATE USE_TERMINAL_UI)
-elseif(BUILD_WITH_SIMPLE_GUI)
+if(BUILD_WITH_SIMPLE_GUI)
     target_compile_definitions(esp32-driver-ide PRIVATE USE_SIMPLE_GUI)
 endif()
 

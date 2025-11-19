@@ -1,12 +1,20 @@
 # ESP32 Driver IDE (C++ Version)
 
-A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **enhanced GUI interface with optional terminal mode**.
+A modern, native C++ IDE for ESP32 development with an integrated AI assistant and **professional GUI interface with modular panels**.
+
+<div align="center">
+
+![ESP32 Driver IDE - Main Interface](screenshot.png)
+
+*Professional dark-themed IDE with gradient styling, modular panels, integrated terminal, and device library*
+
+</div>
 
 <div align="center">
 
 ![ESP32 Driver IDE](https://github.com/user-attachments/assets/f5acf199-3df7-404f-a5c4-d08673720443)
 
-*Professional dark-themed IDE with file explorer, code editor, debugger, and integrated console*
+*Code editor with file explorer, debugger, and integrated console*
 
 </div>
 
@@ -39,13 +47,13 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 
 ## ✨ Latest Update: Pure C++ with Enhanced GUI (November 2025)
 
-**🎨 Professional GUI Interface**: Complete reimplementation with enhanced GUI as the default interface!
+**🎨 Professional GUI Interface**: Complete implementation with gradient styling, modular panels, and integrated terminal!
 
 **🚀 Lightweight & Fast**: Pure C++ with minimal dependencies - native GUI frameworks only!
 
-**💻 Two Interface Options**: 
-1. **Enhanced GUI** (Default): Professional graphical interface with panels, device library, and visual tools
-2. **Terminal Interface** (Optional): Interactive menu system with ANSI color support
+**💻 Modular Design**: 
+- **Enhanced GUI** (Default): Professional graphical interface with dockable panels, gradient styling, device library, and integrated terminal
+- **Simple GUI** (Optional): Lightweight native GUI without external dependencies
 
 **📦 Easy Build**: Single command build with no external dependencies to install!
 
@@ -97,13 +105,15 @@ Includes:
 
 ## Features
 
-### 🎨 Interface Options
+### 🎨 Modern User Interface
 
-The IDE offers three interface modes to suit different workflows:
+The IDE features a professional graphical interface with:
 
-- **Enhanced GUI** (Default): Professional graphical interface with modular panels, dark theme, device library, and visual tools
-- **Terminal UI**: Text-based interface with ANSI colors and interactive menus
-- **Simple GUI**: Lightweight native GUI without external dependencies
+- **Gradient Styling**: Beautiful gradient backgrounds and smooth color transitions
+- **Modular Panel System**: Dockable panels with resizing and floating support
+- **Integrated Terminal**: Built-in terminal for command execution within the IDE
+- **Device Library**: Visual device management with preview and configuration
+- **Dark Theme**: Professional dark theme optimized for long coding sessions
 
 ### ⚡ Key Capabilities
 
@@ -234,14 +244,17 @@ esp32-driver-ide.exe  # Windows
 ### Build Options
 
 ```bash
-# Build with Terminal UI
-cmake -DUSE_TERMINAL_UI=ON ..
-
 # Build with tests
 cmake -DBUILD_TESTS=ON ..
+cmake --build .
 
-# Build in Release mode
+# Build in Release mode (recommended for production)
 cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+
+# Build without Simple GUI (Enhanced GUI only)
+cmake -DBUILD_WITH_SIMPLE_GUI=OFF ..
+cmake --build .
 ```
 
 **📖 See [BUILD_GUIDE.md](BUILD_GUIDE.md) for detailed build instructions.**

@@ -116,9 +116,13 @@ private:
     // Drawing primitives
     void DrawText(int x, int y, const std::string& text, uint32_t color = 0xFFFFFF);
     void DrawRect(int x, int y, int width, int height, uint32_t color = 0x808080, bool filled = false);
+    void DrawGradientRect(int x, int y, int width, int height, uint32_t color1, uint32_t color2, bool vertical = true);
     void DrawButton(int x, int y, int width, int height, const std::string& label);
     void DrawLine(int x1, int y1, int x2, int y2, uint32_t color = 0x808080);
     void ClearWindow(uint32_t color = 0x1E1E1E);
+    
+    // Helper functions for gradients
+    uint32_t InterpolateColor(uint32_t color1, uint32_t color2, float ratio);
     
     // Actions
     void NewFile();
@@ -162,17 +166,25 @@ private:
     bool dragging_panel_;
     bool resizing_panel_;
     
-    // Colors
+    // Colors with gradient support
     struct Colors {
         static constexpr uint32_t BACKGROUND = 0x1E1E1E;
+        static constexpr uint32_t BACKGROUND_GRADIENT_TOP = 0x2D2D30;
+        static constexpr uint32_t BACKGROUND_GRADIENT_BOTTOM = 0x1E1E1E;
         static constexpr uint32_t PANEL_BG = 0x252526;
+        static constexpr uint32_t PANEL_BG_GRADIENT_TOP = 0x2D2D30;
+        static constexpr uint32_t PANEL_BG_GRADIENT_BOTTOM = 0x1E1E1E;
         static constexpr uint32_t PANEL_BORDER = 0x3E3E42;
+        static constexpr uint32_t PANEL_BORDER_HIGHLIGHT = 0x007ACC;
         static constexpr uint32_t TEXT = 0xCCCCCC;
         static constexpr uint32_t TEXT_DIM = 0x6A6A6A;
         static constexpr uint32_t ACCENT = 0x007ACC;
+        static constexpr uint32_t ACCENT_LIGHT = 0x0098FF;
         static constexpr uint32_t ERROR = 0xF14C4C;
         static constexpr uint32_t SUCCESS = 0x89D185;
         static constexpr uint32_t WARNING = 0xCCA700;
+        static constexpr uint32_t BUTTON_GRADIENT_TOP = 0x3E3E42;
+        static constexpr uint32_t BUTTON_GRADIENT_BOTTOM = 0x2D2D30;
     };
 };
 
