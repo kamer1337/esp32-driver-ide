@@ -422,20 +422,32 @@ terminal->SetCommandCallback(handler);
 - Color-coded output
 - Auto-completion
 
-### Dark Theme
+### Dark Theme with Gradient Styling
 
-Professional dark theme optimized for coding:
+Professional dark theme with gradient backgrounds and smooth transitions:
 
 **Color Scheme:**
-- Background: `#1E1E1E`
-- Panel Background: `#252526`
+- Background: `#1E1E1E` (base)
+- Background Gradient: `#2D2D30` → `#1E1E1E` (top to bottom)
+- Panel Background: `#252526` (base)
+- Panel Gradient: `#2D2D30` → `#1E1E1E` (top to bottom)
 - Panel Border: `#3E3E42`
+- Panel Active Border: `#007ACC` (highlighted)
 - Text: `#CCCCCC`
 - Text Dim: `#6A6A6A`
 - Accent: `#007ACC`
+- Accent Light: `#0098FF`
+- Button Gradient: `#3E3E42` → `#2D2D30`
 - Error: `#F14C4C`
 - Success: `#89D185`
 - Warning: `#CCA700`
+
+**Gradient Features:**
+- Smooth color transitions for backgrounds
+- Vertical and horizontal gradient support
+- Active panel highlighting with accent colors
+- Button depth with gradient styling
+- Professional polish with subtle gradients
 
 ---
 
