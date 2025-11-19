@@ -600,9 +600,14 @@ uint32_t EnhancedGuiWindow::InterpolateColor(uint32_t color1, uint32_t color2, f
     uint32_t g2 = (color2 >> 8) & 0xFF;
     uint32_t b2 = color2 & 0xFF;
     
-    uint32_t r = static_cast<uint32_t>(r1 + (r2 - r1) * ratio);
-    uint32_t g = static_cast<uint32_t>(g1 + (g2 - g1) * ratio);
-    uint32_t b = static_cast<uint32_t>(b1 + (b2 - b1) * ratio);
+    // Compute interpolated values with safe conversion
+    int r_diff = static_cast<int>(r2) - static_cast<int>(r1);
+    int g_diff = static_cast<int>(g2) - static_cast<int>(g1);
+    int b_diff = static_cast<int>(b2) - static_cast<int>(b1);
+    
+    uint32_t r = static_cast<uint32_t>(std::max(0, std::min(255, static_cast<int>(r1) + static_cast<int>(r_diff * ratio))));
+    uint32_t g = static_cast<uint32_t>(std::max(0, std::min(255, static_cast<int>(g1) + static_cast<int>(g_diff * ratio))));
+    uint32_t b = static_cast<uint32_t>(std::max(0, std::min(255, static_cast<int>(b1) + static_cast<int>(b_diff * ratio))));
     
     return (r << 16) | (g << 8) | b;
 }
@@ -610,6 +615,7 @@ uint32_t EnhancedGuiWindow::InterpolateColor(uint32_t color1, uint32_t color2, f
 void EnhancedGuiWindow::DrawGradientRect(int x, int y, int width, int height, 
                                          uint32_t color1, uint32_t color2, bool vertical) {
     if (!window_handle_) return;
+    if (width <= 0 || height <= 0) return;  // Prevent division by zero and invalid drawing
     
     auto* platform_data = static_cast<PlatformWindowData*>(window_handle_);
     
