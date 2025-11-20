@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(ESP32DriverIDE VERSION 1.2.0 LANGUAGES CXX)
+project(ESP32DriverIDE VERSION 1.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -35,6 +35,7 @@ set(COMMON_SOURCES
     src/blueprint/blueprint_editor.cpp
     src/scripting/scripting_engine.cpp
     src/decompiler/advanced_decompiler.cpp
+    src/testing/test_framework.cpp
 )
 
 # GUI-specific sources
@@ -85,6 +86,7 @@ set(HEADERS
     src/blueprint/blueprint_editor.h
     src/scripting/scripting_engine.h
     src/decompiler/advanced_decompiler.h
+    src/testing/test_framework.h
 )
 
 # Create executable
