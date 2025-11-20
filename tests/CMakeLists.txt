@@ -28,3 +28,19 @@ target_include_directories(vm_emulator_tests PRIVATE
 
 # Add VM emulator test to CTest
 add_test(NAME VMEmulatorTests COMMAND vm_emulator_tests)
+
+# Version 1.3.0 feature tests
+add_executable(version_1_3_0_tests
+    version_1_3_0_tests.cpp
+    ${CMAKE_SOURCE_DIR}/src/ai_assistant/ai_assistant.cpp
+    ${CMAKE_SOURCE_DIR}/src/collaboration/collaboration.cpp
+    ${CMAKE_SOURCE_DIR}/src/testing/test_framework.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/string_utils.cpp
+)
+
+target_include_directories(version_1_3_0_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+# Add version 1.3.0 tests to CTest
+add_test(NAME Version1_3_0Tests COMMAND version_1_3_0_tests)

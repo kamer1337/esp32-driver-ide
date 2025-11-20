@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include <chrono>
 
 namespace esp32_ide {
 
@@ -76,8 +78,73 @@ public:
     std::string GenerateOTAUpdateCode();
     std::string GenerateDeepSleepCode(int sleep_seconds);
     
+    // Natural language command interpretation (Version 1.3.0)
+    struct CommandInterpretation {
+        std::string action;        // Interpreted action (e.g., "create_file", "generate_code", "refactor")
+        std::string target;        // Target of the action (e.g., "led_blink", "wifi_connection")
+        std::map<std::string, std::string> parameters;  // Extracted parameters
+        float confidence;          // Confidence score (0.0-1.0)
+        std::string raw_command;   // Original command
+    };
+    CommandInterpretation InterpretNaturalLanguage(const std::string& command);
+    std::string ExecuteNaturalLanguageCommand(const std::string& command);
+    
+    // Advanced code analysis (Version 1.3.0)
+    struct SecurityIssue {
+        std::string type;          // Type of issue (e.g., "buffer_overflow", "hardcoded_credentials")
+        std::string severity;      // "critical", "high", "medium", "low"
+        int line_number;
+        std::string description;
+        std::string recommendation;
+    };
+    
+    struct PerformanceIssue {
+        std::string type;          // Type of issue (e.g., "blocking_delay", "inefficient_loop")
+        int line_number;
+        std::string description;
+        std::string optimization;
+        int impact_score;          // 1-10 (10 = highest impact)
+    };
+    
+    struct CodeSmell {
+        std::string type;          // Type of smell (e.g., "magic_number", "long_function")
+        int line_number;
+        std::string description;
+        std::string refactoring_suggestion;
+    };
+    
+    std::vector<SecurityIssue> ScanSecurityVulnerabilities(const std::string& code);
+    std::vector<PerformanceIssue> SuggestPerformanceOptimizations(const std::string& code);
+    std::vector<CodeSmell> DetectCodeSmells(const std::string& code);
+    std::string GenerateSecurityReport(const std::string& code);
+    std::string GeneratePerformanceReport(const std::string& code);
+    
+    // Learning mode (Version 1.3.0)
+    struct UsagePattern {
+        std::string feature;       // Feature being used (e.g., "wifi_connection", "gpio_operations")
+        int frequency;             // Number of times used
+        std::chrono::system_clock::time_point last_used;
+        std::vector<std::string> common_parameters;
+    };
+    
+    struct PersonalizedSuggestion {
+        std::string suggestion;
+        std::string reasoning;     // Why this suggestion is relevant
+        float relevance_score;     // 0.0-1.0
+        std::string category;      // "code_pattern", "optimization", "feature"
+    };
+    
+    void EnableLearningMode(bool enabled);
+    bool IsLearningModeEnabled() const;
+    void RecordUsagePattern(const std::string& feature, const std::map<std::string, std::string>& params);
+    std::vector<PersonalizedSuggestion> GetPersonalizedSuggestions(const std::string& context);
+    std::vector<UsagePattern> GetUsagePatterns() const;
+    void ClearUsageHistory();
+    
 private:
     std::vector<Message> history_;
+    bool learning_mode_enabled_;
+    std::map<std::string, UsagePattern> usage_patterns_;
     
     // Response generators
     std::string GenerateResponse(const std::string& query) const;
@@ -92,6 +159,12 @@ private:
     
     void AddMessage(Message::Sender sender, const std::string& content);
     bool ContainsKeywords(const std::string& text, const std::vector<std::string>& keywords) const;
+    
+    // Helper methods for Version 1.3.0 features
+    std::vector<std::string> ExtractCodeLines(const std::string& code) const;
+    bool IsHardcodedCredential(const std::string& line) const;
+    bool HasBufferOverflowRisk(const std::string& line) const;
+    int CalculateComplexity(const std::string& code) const;
 };
 
 } // namespace esp32_ide

@@ -2,10 +2,12 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <sstream>
+#include <regex>
 
 namespace esp32_ide {
 
-AIAssistant::AIAssistant() {
+AIAssistant::AIAssistant() : learning_mode_enabled_(false) {
     AddMessage(Message::Sender::ASSISTANT, 
                "Hello! I'm here to help you with ESP32 development. "
                "Ask me anything about your code, ESP32 APIs, or debugging issues!");
@@ -956,6 +958,596 @@ void loop() {
 }
 )";
     return code;
+}
+
+// ============================================================================
+// Version 1.3.0 Features: Natural Language Commands
+// ============================================================================
+
+AIAssistant::CommandInterpretation AIAssistant::InterpretNaturalLanguage(const std::string& command) {
+    CommandInterpretation result;
+    result.raw_command = command;
+    result.confidence = 0.0f;
+    
+    std::string lower_cmd = command;
+    std::transform(lower_cmd.begin(), lower_cmd.end(), lower_cmd.begin(), ::tolower);
+    
+    // Detect action verbs
+    if (ContainsKeywords(lower_cmd, {"create", "make", "generate", "write"})) {
+        result.action = "generate_code";
+        result.confidence = 0.8f;
+        
+        // Detect target
+        if (ContainsKeywords(lower_cmd, {"led", "blink"})) {
+            result.target = "led_blink";
+            result.parameters["type"] = "gpio";
+            result.confidence = 0.9f;
+        } else if (ContainsKeywords(lower_cmd, {"wifi", "network"})) {
+            result.target = "wifi_connection";
+            result.parameters["type"] = "wifi";
+            result.confidence = 0.9f;
+        } else if (ContainsKeywords(lower_cmd, {"bluetooth", "ble"})) {
+            result.target = "bluetooth";
+            result.parameters["type"] = "bluetooth";
+            result.confidence = 0.9f;
+        } else if (ContainsKeywords(lower_cmd, {"web", "server"})) {
+            result.target = "web_server";
+            result.parameters["type"] = "web";
+            result.confidence = 0.85f;
+        }
+    } else if (ContainsKeywords(lower_cmd, {"optimize", "improve", "refactor"})) {
+        result.action = "optimize_code";
+        result.confidence = 0.85f;
+        
+        if (ContainsKeywords(lower_cmd, {"performance", "speed", "faster"})) {
+            result.parameters["focus"] = "performance";
+        } else if (ContainsKeywords(lower_cmd, {"readability", "clean", "readable"})) {
+            result.parameters["focus"] = "readability";
+        }
+    } else if (ContainsKeywords(lower_cmd, {"analyze", "check", "scan", "review"})) {
+        result.action = "analyze_code";
+        result.confidence = 0.8f;
+        
+        if (ContainsKeywords(lower_cmd, {"security", "vulnerability", "secure"})) {
+            result.parameters["analysis_type"] = "security";
+            result.confidence = 0.9f;
+        } else if (ContainsKeywords(lower_cmd, {"performance", "optimize"})) {
+            result.parameters["analysis_type"] = "performance";
+            result.confidence = 0.9f;
+        } else if (ContainsKeywords(lower_cmd, {"smell", "quality"})) {
+            result.parameters["analysis_type"] = "code_smell";
+            result.confidence = 0.85f;
+        }
+    } else if (ContainsKeywords(lower_cmd, {"fix", "repair", "correct"})) {
+        result.action = "fix_code";
+        result.confidence = 0.75f;
+        
+        if (ContainsKeywords(lower_cmd, {"bug", "error", "issue"})) {
+            result.parameters["fix_type"] = "bug";
+            result.confidence = 0.85f;
+        }
+    }
+    
+    return result;
+}
+
+std::string AIAssistant::ExecuteNaturalLanguageCommand(const std::string& command) {
+    auto interpretation = InterpretNaturalLanguage(command);
+    
+    if (interpretation.confidence < 0.5f) {
+        return "I'm not sure what you want me to do. Could you rephrase that? "
+               "Try commands like:\n"
+               "- 'Create a LED blink program'\n"
+               "- 'Generate WiFi connection code'\n"
+               "- 'Analyze my code for security issues'\n"
+               "- 'Optimize this code for performance'";
+    }
+    
+    if (interpretation.action == "generate_code") {
+        return GenerateCode(command);
+    } else if (interpretation.action == "optimize_code") {
+        if (interpretation.parameters.count("focus")) {
+            std::string focus = interpretation.parameters.at("focus");
+            if (focus == "performance") {
+                return "I can optimize your code for performance. Please paste your code, "
+                       "and I'll suggest improvements to reduce execution time and memory usage.";
+            } else if (focus == "readability") {
+                return "I can improve code readability. Please paste your code, "
+                       "and I'll suggest ways to make it clearer and more maintainable.";
+            }
+        }
+        return "I can help optimize your code. Please paste the code you'd like me to improve.";
+    } else if (interpretation.action == "analyze_code") {
+        return "I can analyze your code. Please paste it, and I'll check for:\n"
+               "- Security vulnerabilities\n"
+               "- Performance issues\n"
+               "- Code smells and quality concerns";
+    } else if (interpretation.action == "fix_code") {
+        return "I can help fix issues in your code. Please paste the code and describe "
+               "the problem you're experiencing.";
+    }
+    
+    return "Command interpreted but no handler available yet. Interpreted as: " + 
+           interpretation.action + " -> " + interpretation.target;
+}
+
+// ============================================================================
+// Version 1.3.0 Features: Advanced Code Analysis
+// ============================================================================
+
+std::vector<AIAssistant::SecurityIssue> AIAssistant::ScanSecurityVulnerabilities(const std::string& code) {
+    std::vector<SecurityIssue> issues;
+    auto lines = ExtractCodeLines(code);
+    
+    for (size_t i = 0; i < lines.size(); ++i) {
+        const auto& line = lines[i];
+        
+        // Check for hardcoded credentials
+        if (IsHardcodedCredential(line)) {
+            SecurityIssue issue;
+            issue.type = "hardcoded_credentials";
+            issue.severity = "high";
+            issue.line_number = static_cast<int>(i + 1);
+            issue.description = "Hardcoded credentials detected in code";
+            issue.recommendation = "Move credentials to secure storage or configuration file. "
+                                   "Consider using WiFiManager for WiFi credentials.";
+            issues.push_back(issue);
+        }
+        
+        // Check for buffer overflow risks
+        if (HasBufferOverflowRisk(line)) {
+            SecurityIssue issue;
+            issue.type = "buffer_overflow";
+            issue.severity = "critical";
+            issue.line_number = static_cast<int>(i + 1);
+            issue.description = "Potential buffer overflow detected";
+            issue.recommendation = "Use safe string functions like strncpy() instead of strcpy(), "
+                                   "or use std::string for automatic memory management.";
+            issues.push_back(issue);
+        }
+        
+        // Check for unsafe Serial input
+        if (line.find("Serial.read") != std::string::npos && 
+            line.find("while") != std::string::npos) {
+            SecurityIssue issue;
+            issue.type = "unbounded_input";
+            issue.severity = "medium";
+            issue.line_number = static_cast<int>(i + 1);
+            issue.description = "Unbounded serial input may cause memory issues";
+            issue.recommendation = "Limit input size using Serial.readBytesUntil() with a "
+                                   "maximum length parameter.";
+            issues.push_back(issue);
+        }
+        
+        // Check for insecure HTTP connections
+        if (line.find("http://") != std::string::npos && 
+            (line.find("HTTPClient") != std::string::npos || line.find("WiFiClient") != std::string::npos)) {
+            SecurityIssue issue;
+            issue.type = "insecure_connection";
+            issue.severity = "medium";
+            issue.line_number = static_cast<int>(i + 1);
+            issue.description = "Using insecure HTTP connection";
+            issue.recommendation = "Use HTTPS (https://) for secure communication. "
+                                   "Use WiFiClientSecure instead of WiFiClient.";
+            issues.push_back(issue);
+        }
+    }
+    
+    return issues;
+}
+
+std::vector<AIAssistant::PerformanceIssue> AIAssistant::SuggestPerformanceOptimizations(const std::string& code) {
+    std::vector<PerformanceIssue> issues;
+    auto lines = ExtractCodeLines(code);
+    
+    for (size_t i = 0; i < lines.size(); ++i) {
+        const auto& line = lines[i];
+        
+        // Check for delay() in loop
+        if (line.find("delay(") != std::string::npos) {
+            bool in_loop = false;
+            for (size_t j = i; j > 0 && j > i - 20; --j) {
+                std::string check_line = lines[j];
+                // Remove leading/trailing whitespace for comparison
+                check_line.erase(0, check_line.find_first_not_of(" \t\n\r"));
+                if (check_line.find("void loop()") != std::string::npos || 
+                    check_line.find("void loop(") != std::string::npos) {
+                    in_loop = true;
+                    break;
+                }
+            }
+            
+            if (in_loop) {
+                PerformanceIssue issue;
+                issue.type = "blocking_delay";
+                issue.line_number = static_cast<int>(i + 1);
+                issue.description = "Blocking delay() call in loop() function";
+                issue.optimization = "Use millis() for non-blocking timing:\n"
+                                     "unsigned long previousMillis = 0;\n"
+                                     "const long interval = 1000;\n"
+                                     "if (millis() - previousMillis >= interval) {\n"
+                                     "  previousMillis = millis();\n"
+                                     "  // Your code here\n"
+                                     "}";
+                issue.impact_score = 8;
+                issues.push_back(issue);
+            }
+        }
+        
+        // Check for String concatenation in loops
+        if (line.find("String") != std::string::npos && line.find("+=") != std::string::npos) {
+            PerformanceIssue issue;
+            issue.type = "string_concatenation";
+            issue.line_number = static_cast<int>(i + 1);
+            issue.description = "String concatenation can cause memory fragmentation";
+            issue.optimization = "Pre-allocate String with reserve() or use char arrays for "
+                                 "better performance and memory efficiency";
+            issue.impact_score = 6;
+            issues.push_back(issue);
+        }
+        
+        // Check for repeated analogRead
+        if (line.find("analogRead") != std::string::npos) {
+            int analog_count = 0;
+            for (const auto& l : lines) {
+                if (l.find("analogRead") != std::string::npos) {
+                    analog_count++;
+                }
+            }
+            
+            if (analog_count > 3) {
+                PerformanceIssue issue;
+                issue.type = "excessive_analog_reads";
+                issue.line_number = static_cast<int>(i + 1);
+                issue.description = "Multiple analogRead() calls can be slow";
+                issue.optimization = "Cache analog readings or use a lower sampling rate. "
+                                     "Consider using analogReadMilliVolts() for better accuracy.";
+                issue.impact_score = 5;
+                issues.push_back(issue);
+                break;  // Only report once
+            }
+        }
+        
+        // Check for inefficient loops
+        if (line.find("for") != std::string::npos && 
+            (line.find("String") != std::string::npos || line.find(".length()") != std::string::npos)) {
+            PerformanceIssue issue;
+            issue.type = "inefficient_loop";
+            issue.line_number = static_cast<int>(i + 1);
+            issue.description = "Loop condition evaluated every iteration";
+            issue.optimization = "Cache the length value before the loop:\n"
+                                 "int len = myString.length();\n"
+                                 "for (int i = 0; i < len; i++)";
+            issue.impact_score = 4;
+            issues.push_back(issue);
+        }
+    }
+    
+    return issues;
+}
+
+std::vector<AIAssistant::CodeSmell> AIAssistant::DetectCodeSmells(const std::string& code) {
+    std::vector<CodeSmell> smells;
+    auto lines = ExtractCodeLines(code);
+    
+    for (size_t i = 0; i < lines.size(); ++i) {
+        const auto& line = lines[i];
+        
+        // Check for magic numbers
+        if (std::regex_search(line, std::regex("\\b(\\d{3,})\\b")) && 
+            line.find("//") == std::string::npos &&
+            line.find("#define") == std::string::npos) {
+            CodeSmell smell;
+            smell.type = "magic_number";
+            smell.line_number = static_cast<int>(i + 1);
+            smell.description = "Magic number without explanation";
+            smell.refactoring_suggestion = "Define constants with meaningful names:\n"
+                                           "const int SENSOR_THRESHOLD = <value>;\n"
+                                           "const int BAUD_RATE = <value>;";
+            smells.push_back(smell);
+        }
+        
+        // Check for long lines
+        if (line.length() > 120) {
+            CodeSmell smell;
+            smell.type = "long_line";
+            smell.line_number = static_cast<int>(i + 1);
+            smell.description = "Line exceeds recommended length";
+            smell.refactoring_suggestion = "Break long lines into multiple lines for better readability";
+            smells.push_back(smell);
+        }
+        
+        // Check for commented-out code
+        if (line.find("//") != std::string::npos) {
+            std::string after_comment = line.substr(line.find("//") + 2);
+            if (after_comment.find("(") != std::string::npos || 
+                after_comment.find(";") != std::string::npos) {
+                CodeSmell smell;
+                smell.type = "commented_code";
+                smell.line_number = static_cast<int>(i + 1);
+                smell.description = "Commented-out code detected";
+                smell.refactoring_suggestion = "Remove commented code - use version control instead";
+                smells.push_back(smell);
+            }
+        }
+        
+        // Check for duplicate code patterns
+        if (line.find("digitalWrite") != std::string::npos || 
+            line.find("analogWrite") != std::string::npos) {
+            int similar_count = 0;
+            for (const auto& l : lines) {
+                if (l.find(line.substr(0, std::min(size_t(30), line.length()))) != std::string::npos) {
+                    similar_count++;
+                }
+            }
+            
+            if (similar_count > 3) {
+                CodeSmell smell;
+                smell.type = "duplicate_code";
+                smell.line_number = static_cast<int>(i + 1);
+                smell.description = "Duplicate code pattern detected";
+                smell.refactoring_suggestion = "Extract repeated code into a function";
+                smells.push_back(smell);
+                break;  // Only report once
+            }
+        }
+    }
+    
+    return smells;
+}
+
+std::string AIAssistant::GenerateSecurityReport(const std::string& code) {
+    auto issues = ScanSecurityVulnerabilities(code);
+    
+    if (issues.empty()) {
+        return "✓ Security Scan Complete: No critical vulnerabilities detected.\n\n"
+               "Your code follows basic security best practices.";
+    }
+    
+    std::string report = "🔒 Security Analysis Report\n";
+    report += "==========================\n\n";
+    
+    int critical = 0, high = 0, medium = 0, low = 0;
+    for (const auto& issue : issues) {
+        if (issue.severity == "critical") critical++;
+        else if (issue.severity == "high") high++;
+        else if (issue.severity == "medium") medium++;
+        else if (issue.severity == "low") low++;
+    }
+    
+    report += "Summary: " + std::to_string(issues.size()) + " issue(s) found\n";
+    report += "  Critical: " + std::to_string(critical) + "\n";
+    report += "  High: " + std::to_string(high) + "\n";
+    report += "  Medium: " + std::to_string(medium) + "\n";
+    report += "  Low: " + std::to_string(low) + "\n\n";
+    
+    report += "Issues:\n";
+    report += "-------\n";
+    
+    for (const auto& issue : issues) {
+        report += "\n[" + issue.severity + "] Line " + std::to_string(issue.line_number) + ": " + 
+                  issue.type + "\n";
+        report += "Description: " + issue.description + "\n";
+        report += "Recommendation: " + issue.recommendation + "\n";
+    }
+    
+    return report;
+}
+
+std::string AIAssistant::GeneratePerformanceReport(const std::string& code) {
+    auto issues = SuggestPerformanceOptimizations(code);
+    
+    if (issues.empty()) {
+        return "✓ Performance Analysis Complete: No major issues detected.\n\n"
+               "Your code follows good performance practices.";
+    }
+    
+    std::string report = "⚡ Performance Analysis Report\n";
+    report += "=============================\n\n";
+    
+    report += "Found " + std::to_string(issues.size()) + " optimization opportunity(s)\n\n";
+    
+    // Sort by impact score
+    std::vector<PerformanceIssue> sorted_issues = issues;
+    std::sort(sorted_issues.begin(), sorted_issues.end(), 
+              [](const PerformanceIssue& a, const PerformanceIssue& b) {
+                  return a.impact_score > b.impact_score;
+              });
+    
+    for (const auto& issue : sorted_issues) {
+        report += "\n[Impact: " + std::to_string(issue.impact_score) + "/10] Line " + 
+                  std::to_string(issue.line_number) + ": " + issue.type + "\n";
+        report += "Issue: " + issue.description + "\n";
+        report += "Optimization: " + issue.optimization + "\n";
+    }
+    
+    return report;
+}
+
+// ============================================================================
+// Version 1.3.0 Features: Learning Mode
+// ============================================================================
+
+void AIAssistant::EnableLearningMode(bool enabled) {
+    learning_mode_enabled_ = enabled;
+    if (enabled) {
+        AddMessage(Message::Sender::ASSISTANT, 
+                   "Learning mode enabled. I'll track your usage patterns to provide "
+                   "personalized suggestions.");
+    }
+}
+
+bool AIAssistant::IsLearningModeEnabled() const {
+    return learning_mode_enabled_;
+}
+
+void AIAssistant::RecordUsagePattern(const std::string& feature, 
+                                     const std::map<std::string, std::string>& params) {
+    if (!learning_mode_enabled_) {
+        return;
+    }
+    
+    if (usage_patterns_.find(feature) == usage_patterns_.end()) {
+        UsagePattern pattern;
+        pattern.feature = feature;
+        pattern.frequency = 0;
+        pattern.last_used = std::chrono::system_clock::now();
+        usage_patterns_[feature] = pattern;
+    }
+    
+    auto& pattern = usage_patterns_[feature];
+    pattern.frequency++;
+    pattern.last_used = std::chrono::system_clock::now();
+    
+    // Track common parameters
+    for (const auto& param : params) {
+        std::string param_str = param.first + "=" + param.second;
+        if (std::find(pattern.common_parameters.begin(), 
+                      pattern.common_parameters.end(), 
+                      param_str) == pattern.common_parameters.end()) {
+            pattern.common_parameters.push_back(param_str);
+        }
+    }
+}
+
+std::vector<AIAssistant::PersonalizedSuggestion> AIAssistant::GetPersonalizedSuggestions(
+    const std::string& context) {
+    std::vector<PersonalizedSuggestion> suggestions;
+    
+    if (!learning_mode_enabled_ || usage_patterns_.empty()) {
+        return suggestions;
+    }
+    
+    std::string lower_context = context;
+    std::transform(lower_context.begin(), lower_context.end(), lower_context.begin(), ::tolower);
+    
+    // Find most frequently used features
+    std::vector<std::pair<std::string, int>> sorted_features;
+    for (const auto& pair : usage_patterns_) {
+        sorted_features.push_back({pair.first, pair.second.frequency});
+    }
+    std::sort(sorted_features.begin(), sorted_features.end(),
+              [](const auto& a, const auto& b) { return a.second > b.second; });
+    
+    // Generate suggestions based on usage patterns
+    for (size_t i = 0; i < std::min(size_t(3), sorted_features.size()); ++i) {
+        const auto& feature = sorted_features[i].first;
+        const auto& pattern = usage_patterns_.at(feature);
+        
+        PersonalizedSuggestion suggestion;
+        
+        if (feature == "wifi_connection" && pattern.frequency > 5) {
+            suggestion.suggestion = "Create a WiFi connection helper function";
+            suggestion.reasoning = "You frequently work with WiFi. A helper function would save time.";
+            suggestion.relevance_score = 0.9f;
+            suggestion.category = "code_pattern";
+            suggestions.push_back(suggestion);
+        } else if (feature == "gpio_operations" && pattern.frequency > 10) {
+            suggestion.suggestion = "Consider using hardware interrupts for GPIO";
+            suggestion.reasoning = "You use GPIO frequently. Interrupts can improve responsiveness.";
+            suggestion.relevance_score = 0.8f;
+            suggestion.category = "optimization";
+            suggestions.push_back(suggestion);
+        } else if (feature == "sensor_reading" && pattern.frequency > 7) {
+            suggestion.suggestion = "Implement sensor data filtering";
+            suggestion.reasoning = "Frequent sensor readings benefit from filtering for accuracy.";
+            suggestion.relevance_score = 0.85f;
+            suggestion.category = "feature";
+            suggestions.push_back(suggestion);
+        }
+    }
+    
+    // Context-aware suggestions
+    if (ContainsKeywords(lower_context, {"wifi", "network"})) {
+        bool has_wifi_pattern = usage_patterns_.find("wifi_connection") != usage_patterns_.end();
+        if (has_wifi_pattern && usage_patterns_.at("wifi_connection").frequency > 3) {
+            PersonalizedSuggestion suggestion;
+            suggestion.suggestion = "Use your usual WiFi configuration";
+            suggestion.reasoning = "Based on your previous WiFi setups";
+            suggestion.relevance_score = 0.95f;
+            suggestion.category = "code_pattern";
+            suggestions.push_back(suggestion);
+        }
+    }
+    
+    return suggestions;
+}
+
+std::vector<AIAssistant::UsagePattern> AIAssistant::GetUsagePatterns() const {
+    std::vector<UsagePattern> patterns;
+    for (const auto& pair : usage_patterns_) {
+        patterns.push_back(pair.second);
+    }
+    return patterns;
+}
+
+void AIAssistant::ClearUsageHistory() {
+    usage_patterns_.clear();
+}
+
+// ============================================================================
+// Helper Methods
+// ============================================================================
+
+std::vector<std::string> AIAssistant::ExtractCodeLines(const std::string& code) const {
+    std::vector<std::string> lines;
+    std::istringstream stream(code);
+    std::string line;
+    while (std::getline(stream, line)) {
+        lines.push_back(line);
+    }
+    return lines;
+}
+
+bool AIAssistant::IsHardcodedCredential(const std::string& line) const {
+    // Check for common credential patterns
+    std::string lower_line = line;
+    std::transform(lower_line.begin(), lower_line.end(), lower_line.begin(), ::tolower);
+    
+    if ((lower_line.find("password") != std::string::npos || 
+         lower_line.find("pass") != std::string::npos ||
+         lower_line.find("pwd") != std::string::npos ||
+         lower_line.find("ssid") != std::string::npos ||
+         lower_line.find("api_key") != std::string::npos ||
+         lower_line.find("token") != std::string::npos) &&
+        line.find("\"") != std::string::npos &&
+        line.find("=") != std::string::npos) {
+        
+        // Check if it's not a placeholder
+        if (line.find("YOUR_") == std::string::npos &&
+            line.find("CHANGE_") == std::string::npos &&
+            line.find("***") == std::string::npos) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool AIAssistant::HasBufferOverflowRisk(const std::string& line) const {
+    // Check for unsafe functions
+    return line.find("strcpy(") != std::string::npos ||
+           line.find("strcat(") != std::string::npos ||
+           line.find("sprintf(") != std::string::npos ||
+           line.find("gets(") != std::string::npos;
+}
+
+int AIAssistant::CalculateComplexity(const std::string& code) const {
+    int complexity = 1;  // Base complexity
+    
+    // Count decision points
+    size_t pos = 0;
+    std::vector<std::string> keywords = {"if", "else", "for", "while", "case", "&&", "||"};
+    
+    for (const auto& keyword : keywords) {
+        pos = 0;
+        while ((pos = code.find(keyword, pos)) != std::string::npos) {
+            complexity++;
+            pos += keyword.length();
+        }
+    }
+    
+    return complexity;
 }
 
 } // namespace esp32_ide

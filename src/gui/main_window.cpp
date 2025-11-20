@@ -6,7 +6,7 @@ namespace gui {
 
 MainWindow::MainWindow() 
     : is_running_(false),
-      window_title_("ESP32 Driver IDE v2.0.0") {
+      window_title_("ESP32 Driver IDE v1.2.0") {
     
     // Initialize components
     editor_ = std::make_unique<TextEditor>();
