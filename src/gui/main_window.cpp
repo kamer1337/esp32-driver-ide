@@ -29,7 +29,7 @@ bool MainWindow::Initialize() {
     LoadDefaultFile();
     
     // Initialize console
-    console_->AddMessage("ESP32 Driver IDE v1.2.0 - Ready");
+    console_->AddMessage("ESP32 Driver IDE v2.0.0 - Ready");
     console_->AddMessage("IDE initialized successfully", ConsoleWidget::MessageType::SUCCESS);
     
     return true;
