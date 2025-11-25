@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Options
 option(BUILD_TESTS "Build test programs" OFF)
 option(BUILD_WITH_SIMPLE_GUI "Build with simple native GUI (X11/Win32)" ON)
+option(BUILD_TERMINAL_MODE "Build terminal mode executable" ON)
 
 # Common source files
 set(COMMON_SOURCES
@@ -28,6 +29,7 @@ set(COMMON_SOURCES
     src/gui/integrated_terminal.cpp
     src/gui/device_library.cpp
     src/gui/panel_system.cpp
+    src/gui/widgets.cpp
     src/utils/string_utils.cpp
     src/utils/pretrained_model.cpp
     src/utils/ml_device_detector.cpp
@@ -36,6 +38,7 @@ set(COMMON_SOURCES
     src/scripting/scripting_engine.cpp
     src/decompiler/advanced_decompiler.cpp
     src/testing/test_framework.cpp
+    src/backend/backend_framework.cpp
 )
 
 # GUI-specific sources
@@ -79,6 +82,7 @@ set(HEADERS
     src/gui/enhanced_gui_window.h
     src/gui/device_library.h
     src/gui/panel_system.h
+    src/gui/widgets.h
     src/utils/string_utils.h
     src/utils/pretrained_model.h
     src/utils/ml_device_detector.h
@@ -87,6 +91,8 @@ set(HEADERS
     src/scripting/scripting_engine.h
     src/decompiler/advanced_decompiler.h
     src/testing/test_framework.h
+    src/backend/backend_framework.h
+    src/terminal/terminal_mode.h
 )
 
 # Create executable
@@ -206,4 +212,21 @@ target_include_directories(esp32-decompiler-test PRIVATE
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+# Terminal Mode executable
+if(BUILD_TERMINAL_MODE)
+    add_executable(esp32-driver-ide-terminal
+        src/terminal/terminal_main.cpp
+        src/terminal/terminal_mode.cpp
+        ${COMMON_SOURCES}
+    )
+    
+    target_include_directories(esp32-driver-ide-terminal PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    
+    target_compile_definitions(esp32-driver-ide-terminal PRIVATE TERMINAL_MODE)
+    
+    install(TARGETS esp32-driver-ide-terminal DESTINATION bin)
 endif()

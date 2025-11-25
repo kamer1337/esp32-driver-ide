@@ -61,6 +61,14 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
+### Terminal Mode Build
+
+```bash
+cmake -DBUILD_TERMINAL_MODE=ON ..
+cmake --build .
+# Creates: esp32-driver-ide-terminal
+```
+
 ## Usage
 
 ### Enhanced GUI Interface
@@ -82,6 +90,28 @@ Features:
 - **AI Assistant**: Context-aware code help and generation
 - **Compiler Integration**: Compile and upload code to ESP32 devices
 - **Serial Monitor**: Real-time communication with devices
+
+### Terminal Mode (CLI)
+
+For scripting, automation, and headless operation:
+
+```bash
+# Interactive mode
+./esp32-driver-ide-terminal -i
+
+# Command-line usage
+./esp32-driver-ide-terminal --help              # Show help
+./esp32-driver-ide-terminal boards              # List available boards
+./esp32-driver-ide-terminal board "ESP32-S3 Dev Module"  # Set board
+./esp32-driver-ide-terminal verify              # Compile
+./esp32-driver-ide-terminal upload              # Upload to board
+./esp32-driver-ide-terminal monitor 115200      # Open serial monitor
+./esp32-driver-ide-terminal ask "How do I use GPIO pins?"  # Ask AI
+
+# Scripting example
+./esp32-driver-ide-terminal open mysketch.ino
+./esp32-driver-ide-terminal verify && ./esp32-driver-ide-terminal upload
+```
 
 ### API Usage Examples
 
