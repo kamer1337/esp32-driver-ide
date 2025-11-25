@@ -9,7 +9,14 @@
 #include <iomanip>
 #include <algorithm>
 #include <cstdlib>
+
+#ifdef _WIN32
+#include <io.h>
+#define isatty _isatty
+#define fileno _fileno
+#else
 #include <unistd.h>
+#endif
 
 namespace esp32_ide {
 
