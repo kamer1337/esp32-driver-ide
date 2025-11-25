@@ -39,6 +39,10 @@ set(COMMON_SOURCES
     src/decompiler/advanced_decompiler.cpp
     src/testing/test_framework.cpp
     src/backend/backend_framework.cpp
+    # Version 2.0.0 features
+    src/platform/platform_expansion.cpp
+    src/visualization/advanced_visualization.cpp
+    src/plugins/plugin_system.cpp
 )
 
 # GUI-specific sources
@@ -93,6 +97,10 @@ set(HEADERS
     src/testing/test_framework.h
     src/backend/backend_framework.h
     src/terminal/terminal_mode.h
+    # Version 2.0.0 features
+    src/platform/platform_expansion.h
+    src/visualization/advanced_visualization.h
+    src/plugins/plugin_system.h
 )
 
 # Create executable
