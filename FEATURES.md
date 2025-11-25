@@ -359,7 +359,161 @@ Professional graphical interface with modular panels:
 **Interface Options:**
 - **Enhanced GUI** (Default): Full graphical interface
 - **Simple GUI**: Lightweight native GUI
-- **Terminal UI**: Text-based interface
+- **Terminal Mode**: Complete CLI alternative
+
+### Complete GUI Widget System
+
+The IDE provides a comprehensive set of GUI widgets for building professional interfaces:
+
+#### Button Widget
+```cpp
+auto button = std::make_unique<Button>("compile_btn", "Compile");
+button->SetIcon("▶");
+button->SetOnClick([]() { BackendFramework::GetInstance().Verify(); });
+```
+
+#### Dropdown Widget
+```cpp
+auto dropdown = std::make_unique<Dropdown>("board_select");
+dropdown->AddItem("ESP32 Dev Module");
+dropdown->AddItem("ESP32-S3 Dev Module");
+dropdown->SetOnSelect([](int index, const std::string& value) {
+    std::cout << "Selected: " << value << std::endl;
+});
+```
+
+#### Slider Widget
+```cpp
+auto slider = std::make_unique<Slider>("baud_rate", 9600, 921600);
+slider->SetValue(115200);
+slider->SetStep(9600);
+slider->SetOnValueChange([](float value) {
+    BackendFramework::GetInstance().SetSerialBaudRate(static_cast<int>(value));
+});
+```
+
+#### Checkbox Widget
+```cpp
+auto checkbox = std::make_unique<Checkbox>("auto_upload", "Auto Upload", false);
+checkbox->SetOnToggle([](bool checked) {
+    std::cout << "Auto upload: " << (checked ? "enabled" : "disabled") << std::endl;
+});
+```
+
+#### TextInput Widget
+```cpp
+auto input = std::make_unique<TextInput>("ssid_input", "Enter SSID");
+input->SetMaxLength(32);
+input->SetOnSubmit([](const std::string& text) {
+    std::cout << "SSID set to: " << text << std::endl;
+});
+```
+
+#### TabBar Widget
+```cpp
+auto tabs = std::make_unique<TabBar>("file_tabs");
+tabs->AddTab("main", "main.ino", "", true);
+tabs->AddTab("config", "config.h", "", true);
+tabs->SetOnTabChange([](int index, const std::string& tab_id) {
+    std::cout << "Switched to: " << tab_id << std::endl;
+});
+```
+
+#### MenuBar Widget (Arduino IDE Style)
+```cpp
+auto menubar = std::make_unique<MenuBar>("main_menu");
+
+// File menu
+menubar->AddMenu("file", "File");
+menubar->AddMenuItem("file", "new", "New", "Ctrl+N", ArduinoActions::New);
+menubar->AddMenuItem("file", "open", "Open...", "Ctrl+O", ArduinoActions::Open);
+menubar->AddMenuItem("file", "save", "Save", "Ctrl+S", ArduinoActions::Save);
+menubar->AddSeparator("file");
+menubar->AddMenuItem("file", "quit", "Quit", "Ctrl+Q", ArduinoActions::Quit);
+
+// Sketch menu
+menubar->AddMenu("sketch", "Sketch");
+menubar->AddMenuItem("sketch", "verify", "Verify/Compile", "Ctrl+R", ArduinoActions::Verify);
+menubar->AddMenuItem("sketch", "upload", "Upload", "Ctrl+U", ArduinoActions::Upload);
+```
+
+#### Toolbar Widget (Arduino IDE Style)
+```cpp
+auto toolbar = std::make_unique<Toolbar>("main_toolbar");
+toolbar->AddButton("verify", "✓", "Verify", "Compile", ArduinoActions::Verify);
+toolbar->AddButton("upload", "→", "Upload", "Upload to board", ArduinoActions::Upload);
+toolbar->AddSeparator();
+toolbar->AddButton("new", "+", "New", "New sketch", ArduinoActions::New);
+toolbar->AddButton("open", "📁", "Open", "Open file", ArduinoActions::Open);
+toolbar->AddButton("save", "💾", "Save", "Save file", ArduinoActions::Save);
+```
+
+#### StatusBar Widget
+```cpp
+auto statusbar = std::make_unique<StatusBar>("main_status");
+statusbar->AddSection("status", "Ready", -1);
+statusbar->AddSection("cursor", "Ln 1, Col 1", 100);
+statusbar->AddSection("board", "ESP32 on /dev/ttyUSB0", 200);
+
+// Update sections
+statusbar->SetStatusText("Compiling...");
+statusbar->SetCursorPosition(42, 15);
+statusbar->SetBoardInfo("ESP32-S3", "/dev/ttyACM0");
+```
+
+#### Additional Widgets
+- **Label**: Static text display with alignment options
+- **ProgressBar**: Progress indication with percentage display
+- **TreeView**: Hierarchical file/data display
+- **ListView**: Scrollable list with selection
+- **SplitView**: Resizable panel dividers
+
+### Backend Framework
+
+Centralized component management with event-based communication:
+
+```cpp
+// Get the singleton instance
+auto& framework = BackendFramework::GetInstance();
+framework.Initialize();
+
+// Access components
+auto* editor = framework.GetTextEditor();
+auto* compiler = framework.GetCompiler();
+auto* serial = framework.GetSerialMonitor();
+
+// Event handling
+framework.AddEventHandler(BackendFramework::EventType::COMPILE_SUCCESS, 
+    [](const BackendFramework::Event& event) {
+        std::cout << "Compilation successful!" << std::endl;
+    });
+
+// Arduino-style operations
+framework.NewFile("blink.ino");
+framework.Verify();    // Compile
+framework.Upload();    // Upload to board
+framework.OpenSerialMonitor();
+```
+
+### Arduino Actions
+
+Pre-built menu actions matching Arduino IDE functionality:
+
+```cpp
+// File actions
+ArduinoActions::New();
+ArduinoActions::Open();
+ArduinoActions::Save();
+
+// Sketch actions
+ArduinoActions::Verify();
+ArduinoActions::Upload();
+
+// Tools actions
+ArduinoActions::SerialMonitor();
+ArduinoActions::BoardManager();
+ArduinoActions::AutoFormat();
+```
 
 ### Modular Panel System
 
@@ -448,6 +602,59 @@ Professional dark theme with gradient backgrounds and smooth transitions:
 - Active panel highlighting with accent colors
 - Button depth with gradient styling
 - Professional polish with subtle gradients
+
+### Terminal Mode (Alternative CLI)
+
+Complete command-line interface for headless/scriptable operation:
+
+```bash
+# Start interactive mode
+./esp32-driver-ide-terminal -i
+
+# Single command execution
+./esp32-driver-ide-terminal verify
+./esp32-driver-ide-terminal upload
+./esp32-driver-ide-terminal boards
+```
+
+**Available Commands:**
+
+| Category | Commands |
+|----------|----------|
+| File Operations | `new`, `open`, `save`, `close`, `list`, `cat`, `edit` |
+| Board & Port | `board`, `port`, `boards`, `ports` |
+| Compile & Upload | `verify`, `upload` |
+| Serial | `monitor`, `send` |
+| Emulator | `emulator [start|stop|status]` |
+| AI Assistant | `ask`, `generate`, `analyze`, `fix` |
+| Device Library | `devices`, `add-device` |
+| Settings | `config`, `set`, `get` |
+
+**Interactive Mode Example:**
+```
+esp32> board ESP32-S3 Dev Module
+✓ Board set to: ESP32-S3 Dev Module
+
+esp32> verify
+ℹ Compiling sketch...
+[██████████████████████████████] 100%
+✓ Compilation successful
+
+esp32> upload
+ℹ Uploading to ESP32-S3 Dev Module on /dev/ttyUSB0...
+✓ Upload complete
+
+esp32> monitor 115200
+✓ Serial monitor opened at 115200 baud
+ℹ Press Ctrl+C to close
+```
+
+**Scripting Support:**
+```bash
+# Automated build script
+./esp32-driver-ide-terminal open project.ino
+./esp32-driver-ide-terminal verify && ./esp32-driver-ide-terminal upload
+```
 
 ---
 

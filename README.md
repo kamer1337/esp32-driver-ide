@@ -54,6 +54,7 @@ A modern, native C++ IDE for ESP32 development with an integrated AI assistant a
 **💻 Modular Design**: 
 - **Enhanced GUI** (Default): Professional graphical interface with dockable panels, gradient styling, device library, and integrated terminal
 - **Simple GUI** (Optional): Lightweight native GUI without external dependencies
+- **Terminal Mode** (New): Complete CLI alternative for scripting and headless operation
 
 **📦 Easy Build**: Single command build with no external dependencies to install!
 
@@ -122,6 +123,9 @@ The IDE features a professional graphical interface with:
 - **ESP32 Device Support**: 8 device variants with ML-based auto-detection
 - **Advanced Tools**: Virtual machine emulator, blueprint editor, decompiler, and scripting engine
 - **Modern Code Editor**: Syntax highlighting, multiple tabs, file tree, and intelligent autocomplete
+- **Backend Framework**: Centralized component management with event-based communication
+- **Complete GUI Widgets**: Buttons, dropdowns, sliders, menus, toolbars, and more (Arduino IDE style)
+- **Terminal Mode**: Full CLI for scripting and automation
 
 **📖 See [FEATURES.md](FEATURES.md) for complete feature documentation with examples and API reference.**
 
@@ -179,6 +183,32 @@ cmake --build .
 # Build in Release mode
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
+
+# Build Terminal Mode executable
+cmake -DBUILD_TERMINAL_MODE=ON ..
+cmake --build .
+# Run with: ./esp32-driver-ide-terminal
+
+# All options
+cmake -DBUILD_TESTS=ON -DBUILD_TERMINAL_MODE=ON -DBUILD_WITH_SIMPLE_GUI=ON ..
+```
+
+## Terminal Mode (CLI)
+
+For scripting and headless operation, use the Terminal Mode:
+
+```bash
+# Interactive mode
+./esp32-driver-ide-terminal -i
+
+# Show help
+./esp32-driver-ide-terminal --help
+
+# Direct commands
+./esp32-driver-ide-terminal boards        # List available boards
+./esp32-driver-ide-terminal verify        # Compile current sketch
+./esp32-driver-ide-terminal upload        # Upload to board
+./esp32-driver-ide-terminal monitor 115200  # Open serial monitor
 ```
 
 ## Architecture
@@ -188,12 +218,14 @@ The IDE is built with a modular architecture using modern C++ design patterns:
 ```
 src/
 ├── main.cpp                    # Entry point
+├── backend/                    # Backend framework and event system
+├── terminal/                   # Terminal mode CLI application
 ├── editor/                     # Text editor and syntax highlighting
 ├── file_manager/              # File operations and templates
 ├── ai_assistant/              # AI help and code generation
 ├── compiler/                  # ESP32 compilation and analysis
 ├── serial/                    # Serial communication and monitoring
-├── gui/                       # User interface (GUI/Terminal)
+├── gui/                       # User interface components and widgets
 ├── emulator/                  # Virtual machine emulator
 ├── blueprint/                 # Visual component editor
 ├── decompiler/                # Firmware analysis
