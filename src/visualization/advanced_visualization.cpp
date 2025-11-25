@@ -564,8 +564,12 @@ int ProtocolDecoder::AutoDetectBaudRate(const std::vector<SignalSample>& data) c
     // Estimate baud rate from minimum pulse width
     int estimated = static_cast<int>(1000000.0 / min_pulse);
     
+    // Standard baud rates (static to avoid repeated allocations)
+    static const std::vector<int> standard_rates = {
+        9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600
+    };
+    
     // Round to nearest standard baud rate
-    std::vector<int> standard_rates = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
     int closest = standard_rates[0];
     int min_diff = std::abs(estimated - closest);
     

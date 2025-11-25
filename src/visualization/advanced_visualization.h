@@ -108,10 +108,15 @@ public:
     std::string GenerateWaveformSVG(int channel_id, int width = 800, int height = 200) const;
     
     // Signal analysis
+    /** @brief Get signal frequency in Hz. Returns 0 if insufficient data. */
     double GetFrequency(int channel_id) const;
+    /** @brief Get duty cycle as percentage (0-100). Returns 0 if no data. */
     double GetDutyCycle(int channel_id) const;
+    /** @brief Get RMS voltage value. Returns 0 if no samples. */
     double GetRMS(int channel_id) const;
+    /** @brief Get peak-to-peak voltage. Returns 0 if no samples. */
     double GetPeakToPeak(int channel_id) const;
+    /** @brief Get average voltage value. Returns 0 if no samples. */
     double GetAverage(int channel_id) const;
     
     // Trigger settings

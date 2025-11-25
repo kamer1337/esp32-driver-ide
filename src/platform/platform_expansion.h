@@ -249,6 +249,12 @@ enum class ConnectionStatus {
 
 /**
  * @brief IoT credentials structure
+ * 
+ * @warning Security Note: This structure contains sensitive authentication data.
+ * - Never log or print credential values
+ * - Clear credentials from memory when no longer needed
+ * - Use secure storage mechanisms in production
+ * - Consider using hardware security modules (HSM) for private keys
  */
 struct IoTCredentials {
     std::string client_id;
