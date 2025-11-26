@@ -180,7 +180,7 @@ esp32-driver-ide.exe  # Windows
 cmake -DBUILD_TESTS=ON ..
 cmake --build .
 
-# Build in Release mode
+# Build in Release mode (recommended for production)
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 
@@ -189,9 +189,15 @@ cmake -DBUILD_TERMINAL_MODE=ON ..
 cmake --build .
 # Run with: ./esp32-driver-ide-terminal
 
+# Build without Simple GUI (Enhanced GUI only)
+cmake -DBUILD_WITH_SIMPLE_GUI=OFF ..
+cmake --build .
+
 # All options
 cmake -DBUILD_TESTS=ON -DBUILD_TERMINAL_MODE=ON -DBUILD_WITH_SIMPLE_GUI=ON ..
 ```
+
+**📖 See [BUILD_GUIDE.md](BUILD_GUIDE.md) for detailed build instructions.**
 
 ## Terminal Mode (CLI)
 
@@ -233,63 +239,6 @@ src/
 ```
 
 **📖 See [FEATURES.md](FEATURES.md) for detailed component documentation.**
-## Building from Source
-
-### Prerequisites
-
-#### Linux (Ubuntu/Debian)
-```bash
-sudo apt-get update
-sudo apt-get install build-essential cmake g++
-```
-
-#### macOS
-```bash
-xcode-select --install
-brew install cmake
-```
-
-#### Windows
-- Visual Studio 2019 or later with C++ tools
-- CMake 3.15 or later
-
-### Build Instructions
-
-```bash
-# Clone the repository
-git clone https://github.com/kamer1337/esp32-driver-ide.git
-cd esp32-driver-ide
-
-# Create build directory
-mkdir build && cd build
-
-# Configure and build
-cmake ..
-cmake --build .
-
-# Run the IDE
-./esp32-driver-ide  # Linux/macOS
-# or
-esp32-driver-ide.exe  # Windows
-```
-
-### Build Options
-
-```bash
-# Build with tests
-cmake -DBUILD_TESTS=ON ..
-cmake --build .
-
-# Build in Release mode (recommended for production)
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-
-# Build without Simple GUI (Enhanced GUI only)
-cmake -DBUILD_WITH_SIMPLE_GUI=OFF ..
-cmake --build .
-```
-
-**📖 See [BUILD_GUIDE.md](BUILD_GUIDE.md) for detailed build instructions.**
 
 ## Technical Details
 
