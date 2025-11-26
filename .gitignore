@@ -19,6 +19,7 @@ npm-debug.log*
 
 # Build artifacts
 build/
+build_test/
 cmake-build-*/
 CMakeCache.txt
 CMakeFiles/

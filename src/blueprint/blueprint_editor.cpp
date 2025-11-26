@@ -8,6 +8,16 @@
 namespace esp32_ide {
 namespace blueprint {
 
+// Helper function to repeat a UTF-8 string (multi-byte safe)
+static std::string RepeatString(const std::string& str, size_t count) {
+    std::string result;
+    result.reserve(str.size() * count);
+    for (size_t i = 0; i < count; ++i) {
+        result += str;
+    }
+    return result;
+}
+
 // Component implementation
 Component::Component(const std::string& id, ComponentType type, const std::string& name)
     : id_(id), type_(type), name_(name), x_(0), y_(0), width_(100), height_(60) {
@@ -827,9 +837,9 @@ void BlueprintPreviewer::RenderComponent2D(const Component* component) {
     switch (type) {
         case ComponentType::ESP32_BOARD:
             // Draw as large rectangle with pins
-            visual_repr = "┌" + std::string(width / 2 - 2, '─') + "┐\n";
+            visual_repr = "┌" + RepeatString("─", static_cast<size_t>(width / 2 - 2)) + "┐\n";
             visual_repr += "│ ESP32 │\n";
-            visual_repr += "└" + std::string(width / 2 - 2, '─') + "┘\n";
+            visual_repr += "└" + RepeatString("─", static_cast<size_t>(width / 2 - 2)) + "┘\n";
             break;
         case ComponentType::LED:
             // Draw as circle/diamond
@@ -883,8 +893,8 @@ void BlueprintPreviewer::RenderComponent2D(const Component* component) {
     // Highlight if selected
     if (component->GetId() == highlighted_component_) {
         // Add highlight border (double-line box around component)
-        visual_repr = "╔" + std::string(width / 2, '═') + "╗\n" + visual_repr;
-        visual_repr += "╚" + std::string(width / 2, '═') + "╝\n";
+        visual_repr = "╔" + RepeatString("═", static_cast<size_t>(width / 2)) + "╗\n" + visual_repr;
+        visual_repr += "╚" + RepeatString("═", static_cast<size_t>(width / 2)) + "╝\n";
     }
 }
 
