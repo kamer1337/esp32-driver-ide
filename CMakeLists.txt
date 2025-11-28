@@ -30,6 +30,7 @@ set(COMMON_SOURCES
     src/gui/device_library.cpp
     src/gui/panel_system.cpp
     src/gui/widgets.cpp
+    src/gui/gui_wired_framework.cpp
     src/utils/string_utils.cpp
     src/utils/pretrained_model.cpp
     src/utils/ml_device_detector.cpp
@@ -87,6 +88,7 @@ set(HEADERS
     src/gui/device_library.h
     src/gui/panel_system.h
     src/gui/widgets.h
+    src/gui/gui_wired_framework.h
     src/utils/string_utils.h
     src/utils/pretrained_model.h
     src/utils/ml_device_detector.h
@@ -216,6 +218,28 @@ target_include_directories(esp32-decompiler-test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# GUI Wired Framework test executable
+add_executable(esp32-gui-wired-framework-test
+    src/gui_wired_framework_test.cpp
+    ${COMMON_SOURCES}
+    src/gui/enhanced_gui_window.cpp
+)
+
+target_include_directories(esp32-gui-wired-framework-test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+# GUI Wired Framework demo executable
+add_executable(esp32-gui-wired-framework-demo
+    src/gui_wired_framework_demo.cpp
+    ${COMMON_SOURCES}
+    src/gui/enhanced_gui_window.cpp
+)
+
+target_include_directories(esp32-gui-wired-framework-demo PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 # Testing
 if(BUILD_TESTS)
     enable_testing()
@@ -228,6 +252,7 @@ if(BUILD_TERMINAL_MODE)
         src/terminal/terminal_main.cpp
         src/terminal/terminal_mode.cpp
         ${COMMON_SOURCES}
+        src/gui/enhanced_gui_window.cpp
     )
     
     target_include_directories(esp32-driver-ide-terminal PRIVATE
