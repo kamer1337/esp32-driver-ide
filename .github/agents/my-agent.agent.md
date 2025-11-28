@@ -1,6 +1,6 @@
 ---
 name: creator of interface
-descriptio!: Expert in GUI Development in C/C++
+description: Expert in GUI Development in C/C++
 ---
 
 ## Introduction
