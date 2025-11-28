@@ -122,9 +122,11 @@ public:
     const std::vector<std::string>& GetFileList() const { return file_list_; }
     const std::vector<std::string>& GetDeviceList() const { return device_list_; }
     bool IsPanelVisible(const std::string& id) const { return visible_panels_.count(id) > 0; }
+    // Note: Returns true by default for widgets that haven't been explicitly disabled.
+    // This matches the expected behavior where widgets are enabled until disabled.
     bool IsWidgetEnabled(const std::string& id) const { 
         auto it = widget_enabled_.find(id);
-        return it != widget_enabled_.end() ? it->second : true;
+        return it != widget_enabled_.end() ? it->second : true;  // Default: enabled
     }
     bool IsProgressVisible() const { return progress_visible_; }
     

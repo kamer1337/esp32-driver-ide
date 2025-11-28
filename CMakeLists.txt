@@ -229,6 +229,17 @@ target_include_directories(esp32-gui-wired-framework-test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# GUI Wired Framework demo executable
+add_executable(esp32-gui-wired-framework-demo
+    src/gui_wired_framework_demo.cpp
+    ${COMMON_SOURCES}
+    src/gui/enhanced_gui_window.cpp
+)
+
+target_include_directories(esp32-gui-wired-framework-demo PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 # Testing
 if(BUILD_TESTS)
     enable_testing()

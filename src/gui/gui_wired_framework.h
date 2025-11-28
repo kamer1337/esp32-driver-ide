@@ -192,7 +192,10 @@ public:
     virtual void ShowMessageDialog(const std::string& title, const std::string& message) = 0;
     
     // Progress indication
-    virtual void ShowProgress(const std::string& message, float progress = -1.0f) = 0;
+    // @param progress: Value from 0.0 to 1.0 for determinate progress, 
+    //                  or PROGRESS_INDETERMINATE (-1.0f) for indeterminate progress
+    static constexpr float PROGRESS_INDETERMINATE = -1.0f;
+    virtual void ShowProgress(const std::string& message, float progress = PROGRESS_INDETERMINATE) = 0;
     virtual void HideProgress() = 0;
     
     // Event binding

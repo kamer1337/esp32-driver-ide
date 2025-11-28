@@ -14,6 +14,9 @@
 namespace esp32_ide {
 namespace gui {
 
+// Configuration constants
+static constexpr size_t MAX_CONSOLE_MESSAGES = 100;
+
 // =============================================================================
 // GuiWiredFramework Implementation
 // =============================================================================
@@ -604,7 +607,11 @@ void GuiWiredFramework::OnDeviceConfigure(const GuiEvent& event) {
 
 BackendAdapter::BackendAdapter() {
     // Initialize using the singleton BackendFramework
-    BackendFramework::GetInstance().Initialize();
+    // Note: Initialize() returns bool but we can't propagate this from constructor.
+    // The BackendFramework is designed to be resilient and will log errors internally.
+    if (!BackendFramework::GetInstance().Initialize()) {
+        std::cerr << "BackendAdapter: Warning - BackendFramework initialization may have issues\n";
+    }
 }
 
 BackendAdapter::~BackendAdapter() {
@@ -848,8 +855,8 @@ void FrontendAdapter::AddConsoleMessage(const std::string& message, const std::s
     console_messages_.push_back("[" + type + "] " + message);
     std::cout << "[" << type << "] " << message << "\n";
     
-    // Keep only last 100 messages
-    if (console_messages_.size() > 100) {
+    // Keep only last MAX_CONSOLE_MESSAGES messages
+    if (console_messages_.size() > MAX_CONSOLE_MESSAGES) {
         console_messages_.erase(console_messages_.begin());
     }
 }
@@ -898,20 +905,25 @@ void FrontendAdapter::SetWidgetVisible(const std::string& widget_id, bool visibl
 }
 
 std::string FrontendAdapter::ShowOpenFileDialog(const std::string& title, const std::string& filter) {
-    // In a real implementation, this would show a native file dialog
-    // For now, return empty string (user cancelled)
+    // STUB: In a real GUI implementation, this would show a native file dialog.
+    // Current implementation logs to console and returns empty string (simulating user cancel).
+    // Platform-specific implementations should override this method.
     std::cout << "Open File Dialog: " << title << " (filter: " << filter << ")\n";
     return "";
 }
 
 std::string FrontendAdapter::ShowSaveFileDialog(const std::string& title, const std::string& filter) {
-    // In a real implementation, this would show a native file dialog
+    // STUB: In a real GUI implementation, this would show a native file dialog.
+    // Current implementation logs to console and returns empty string (simulating user cancel).
+    // Platform-specific implementations should override this method.
     std::cout << "Save File Dialog: " << title << " (filter: " << filter << ")\n";
     return "";
 }
 
 bool FrontendAdapter::ShowConfirmDialog(const std::string& title, const std::string& message) {
-    // In a real implementation, this would show a confirmation dialog
+    // STUB: In a real GUI implementation, this would show a confirmation dialog.
+    // Current implementation logs to console and returns true (auto-confirm).
+    // Platform-specific implementations should override this method.
     std::cout << "Confirm: " << title << " - " << message << "\n";
     return true;
 }
