@@ -1179,7 +1179,8 @@ int TerminalModeApp::HandleExport(const std::vector<std::string>& args) {
     }
     
     PrintSuccess("Binary exported to: " + output_path);
-    PrintInfo("Binary size: 256KB (simulated)");
+    // Note: Actual binary size would be determined by compiler output
+    PrintInfo("Export complete (actual export requires toolchain integration)");
     return 0;
 }
 
