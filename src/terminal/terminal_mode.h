@@ -73,6 +73,7 @@ private:
     std::map<std::string, Command> commands_;
     std::map<std::string, std::string> aliases_;
     std::string prompt_;
+    std::vector<std::string> command_history_;
     
     // Command handlers
     int HandleHelp(const std::vector<std::string>& args);
@@ -120,6 +121,31 @@ private:
     int HandleConfig(const std::vector<std::string>& args);
     int HandleSet(const std::vector<std::string>& args);
     int HandleGet(const std::vector<std::string>& args);
+    
+    // Project commands
+    int HandleCreate(const std::vector<std::string>& args);
+    int HandleTemplates(const std::vector<std::string>& args);
+    int HandleRecent(const std::vector<std::string>& args);
+    int HandleExport(const std::vector<std::string>& args);
+    
+    // Utility commands
+    int HandleClear(const std::vector<std::string>& args);
+    int HandleHistory(const std::vector<std::string>& args);
+    int HandleStatus(const std::vector<std::string>& args);
+    int HandleInfo(const std::vector<std::string>& args);
+    
+    // Script commands
+    int HandleScript(const std::vector<std::string>& args);
+    
+    // Plugin commands
+    int HandlePlugins(const std::vector<std::string>& args);
+    
+    // Test commands
+    int HandleTest(const std::vector<std::string>& args);
+    int HandleCoverage(const std::vector<std::string>& args);
+    
+    // Decompiler commands
+    int HandleDecompile(const std::vector<std::string>& args);
     
     // Helper methods
     std::vector<std::string> ParseArguments(const std::string& input);
